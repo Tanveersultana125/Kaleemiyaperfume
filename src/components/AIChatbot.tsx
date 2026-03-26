@@ -37,22 +37,9 @@ const AIChatbot = () => {
     }
   }, [messages, isTyping]);
 
-  // Text to Speech Function
-  const speak = (text: string) => {
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.pitch = 1;
-      utterance.rate = 1;
-      window.speechSynthesis.speak(utterance);
-    }
-  };
 
-  useEffect(() => {
-    if (isOpen && messages.length === 1) {
-      speak(messages[0].content);
-    }
-  }, [isOpen]);
+
+
 
   const handleSend = async () => {
     if (!input.trim()) return;
@@ -99,7 +86,7 @@ const AIChatbot = () => {
       };
 
       setMessages(prev => [...prev, assistantMsg]);
-      speak(response);
+
     } catch (error) {
       console.error("Groq Error:", error);
       const errorMsg: Message = {

@@ -35,6 +35,11 @@ const Shop = ({
   const [activeSort, setActiveSort] = useState<SortOption>("Best selling");
   const [isSortOpen, setIsSortOpen] = useState(false);
 
+  // Scroll to top when this page loads or when filters/categories change
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "instant" });
+  }, [activeCategory, activeGender, query]);
+
   // Sync initial category from props
   useEffect(() => {
     if (initialProductCategory) {
