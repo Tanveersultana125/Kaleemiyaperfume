@@ -2,8 +2,38 @@ import { motion } from "framer-motion";
 import { Mail, Phone, MapPin, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import SectionHeading from "./SectionHeading";
+import { useState } from "react";
+import { toast } from "sonner";
 
 const ContactSection = () => {
+  const [formData, setFormData] = useState({ name: "", email: "", message: "" });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.name || !formData.email) {
+      toast.error("Please provide your name and email.");
+      return;
+    }
+
+    // Simulate sending to Admin Dashboard
+    const newRequest = {
+      name: formData.name,
+      email: formData.email,
+      date: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }),
+      initial: formData.name.charAt(0).toUpperCase(),
+      role: "Portal Inquiry / Access Request"
+    };
+
+    const existingRequests = JSON.parse(localStorage.getItem("kaleemiya_admin_requests") || "[]");
+    localStorage.setItem("kaleemiya_admin_requests", JSON.stringify([newRequest, ...existingRequests]));
+    
+    // Trigger event for AdminDashboard to update
+    window.dispatchEvent(new Event("admin_requests_updated"));
+
+    toast.success("Your request has been sent to the admin team!");
+    setFormData({ name: "", email: "", message: "" });
+  };
+
   return (
     <section id="contact" className="py-24 overflow-hidden bg-background relative z-10">
       <div className="max-w-[1440px] mx-auto px-6 md:px-12 lg:px-20">
@@ -57,16 +87,34 @@ const ContactSection = () => {
             
             <div className="pt-6 border-t border-border/40">
               <h4 className="font-serif text-lg text-foreground mb-6">Send an Inquiry</h4>
-              <div className="space-y-4">
+              <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <input type="text" placeholder="Name" className="bg-muted/30 border border-border/50 rounded-sm px-4 py-2.5 text-xs focus:outline-none focus:border-primary/50" />
-                  <input type="email" placeholder="Email" className="bg-muted/30 border border-border/50 rounded-sm px-4 py-2.5 text-xs focus:outline-none focus:border-primary/50" />
+                  <input 
+                    type="text" 
+                    placeholder="Name" 
+                    value={formData.name}
+                    onChange={(e) => setFormData({...formData, name: e.target.value})}
+                    className="bg-muted/30 border border-border/50 rounded-sm px-4 py-2.5 text-xs focus:outline-none focus:border-primary/50" 
+                  />
+                  <input 
+                    type="email" 
+                    placeholder="Email" 
+                    value={formData.email}
+                    onChange={(e) => setFormData({...formData, email: e.target.value})}
+                    className="bg-muted/30 border border-border/50 rounded-sm px-4 py-2.5 text-xs focus:outline-none focus:border-primary/50" 
+                  />
                 </div>
-                <textarea placeholder="How can we help?" rows={3} className="w-full bg-muted/30 border border-border/50 rounded-sm px-4 py-2.5 text-xs focus:outline-none focus:border-primary/50" />
-                <Button variant="gold" className="w-full md:w-auto px-10 text-[10px] tracking-[0.2em] uppercase rounded-sm h-10">
+                <textarea 
+                  placeholder="How can we help?" 
+                  rows={3} 
+                  value={formData.message}
+                  onChange={(e) => setFormData({...formData, message: e.target.value})}
+                  className="w-full bg-muted/30 border border-border/50 rounded-sm px-4 py-2.5 text-xs focus:outline-none focus:border-primary/50" 
+                />
+                <Button type="submit" variant="gold" className="w-full md:w-auto px-10 text-[10px] tracking-[0.2em] uppercase rounded-sm h-10">
                   Submit Inquiry
                 </Button>
-              </div>
+              </form>
             </div>
           </motion.div>
           
