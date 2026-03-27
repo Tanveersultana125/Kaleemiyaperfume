@@ -33,10 +33,10 @@ const CartDrawer = () => {
   return (
     <Sheet>
       <SheetTrigger asChild>
-        <button className="relative text-foreground/70 hover:text-primary transition-colors">
-          <ShoppingBag className="w-5 h-5" />
+        <button className="relative text-black hover:opacity-70 transition-all flex items-center">
+          <ShoppingBag className="w-5.5 h-5.5" />
           {totalCount > 0 && (
-            <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[#310101] text-[10px] flex items-center justify-center text-white font-bold animate-in fade-in zoom-in border border-white/20">
+            <span className="absolute -top-1.5 -right-1.5 w-4.5 h-4.5 rounded-full bg-[#310101] text-[9px] flex items-center justify-center text-white font-bold animate-in fade-in zoom-in border border-white/20">
               {totalCount}
             </span>
           )}

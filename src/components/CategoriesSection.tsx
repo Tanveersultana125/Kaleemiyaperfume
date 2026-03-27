@@ -34,11 +34,10 @@ const CategoriesSection = () => {
                 className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
                 loading="lazy"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/30 to-transparent" />
-              <div className="absolute inset-0 border border-primary/0 group-hover:border-primary/20 rounded-sm transition-all duration-500" />
-              <div className="absolute bottom-0 left-0 p-8">
-                <h3 className="font-serif text-2xl md:text-3xl text-foreground mb-1">{cat.title}</h3>
-                <p className="text-muted-foreground font-sans text-sm tracking-wide">{cat.subtitle}</p>
+              <div className="absolute inset-0 border border-white/10 group-hover:border-primary/20 rounded-sm transition-all duration-500" />
+              <div className="absolute bottom-0 left-0 p-8 w-full bg-gradient-to-t from-black/20 to-transparent">
+                <h3 className="font-serif text-2xl md:text-3xl text-white mb-1 drop-shadow-md">{cat.title}</h3>
+                <p className="text-white/90 font-sans text-sm tracking-wide drop-shadow-sm">{cat.subtitle}</p>
               </div>
             </motion.div>
           </Link>

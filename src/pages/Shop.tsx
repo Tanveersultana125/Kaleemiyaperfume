@@ -4,9 +4,10 @@ import { SlidersHorizontal, ChevronDown } from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import ProductCard from "@/components/ProductCard";
-import { allProducts } from "@/data/products";
+import { useProducts } from "@/hooks/useProducts";
 
 const categories = ["ALL", "MEN", "WOMEN", "UNISEX"] as const;
+
 type Category = typeof categories[number];
 
 const sortOptions = ["Best selling", "Price: Low to High", "Price: High to Low", "Newest"] as const;
@@ -34,6 +35,7 @@ const Shop = ({
   const [activeCategory, setActiveCategory] = useState<string>("all");
   const [activeSort, setActiveSort] = useState<SortOption>("Best selling");
   const [isSortOpen, setIsSortOpen] = useState(false);
+  const { products: allProducts } = useProducts();
 
   // Scroll to top when this page loads or when filters/categories change
   useEffect(() => {

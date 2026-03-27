@@ -11,6 +11,7 @@ import PrayerMats from "./pages/PrayerMats.tsx";
 import IslamicBooks from "./pages/IslamicBooks.tsx";
 import Contact from "./pages/Contact.tsx";
 import ProductDetail from "./pages/ProductDetail.tsx";
+import AdminDashboard from "./pages/AdminDashboard.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import AIChatbot from "./components/AIChatbot.tsx";
 import WhatsAppButton from "./components/WhatsAppButton.tsx";
@@ -52,6 +53,7 @@ const App = () => {
                   <Route path="/books" element={<IslamicBooks />} />
                   <Route path="/contact" element={<Contact />} />
                   <Route path="/product/:id" element={<ProductDetail />} />
+                  <Route path="/admin" element={<AdminDashboard />} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
                 <WhatsAppButton />

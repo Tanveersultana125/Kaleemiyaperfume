@@ -65,7 +65,7 @@ const StoreGallery = () => {
               alt={galleryImages[1].alt} 
               className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
             />
-            <div className="absolute inset-0 bg-black/20 group-hover:bg-black/0 transition-colors duration-500" />
+            <div className="absolute inset-0 group-hover:bg-black/5 transition-colors duration-500" />
           </motion.div>
 
           {/* Right Column Grid */}
@@ -84,7 +84,7 @@ const StoreGallery = () => {
                   alt={image.alt} 
                   className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                 />
-                <div className="absolute inset-0 bg-black/20 group-hover:bg-black/0 transition-colors duration-500" />
+                <div className="absolute inset-0 group-hover:bg-black/5 transition-colors duration-500" />
               </motion.div>
             ))}
           </div>

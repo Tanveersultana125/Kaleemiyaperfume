@@ -4,7 +4,7 @@ import brandStory from "@/assets/brand-story.jpg";
 
 const BrandStory = () => {
   return (
-    <section className="section-padding overflow-hidden" style={{ background: "linear-gradient(180deg, hsl(0, 78%, 8%) 0%, hsl(0, 0%, 3.1%) 100%)" }}>
+    <section className="section-padding overflow-hidden bg-background">
       <div className="max-w-[1200px] mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
         {/* Text */}
         <motion.div

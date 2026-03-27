@@ -23,6 +23,14 @@ import store5 from "@/assets/store-5.jpg";
 import store6 from "@/assets/store-6.jpg";
 import store7 from "@/assets/store-7.jpg";
 
+// New unique bestseller images
+import imperialOud from "@/assets/imperial_oud.png";
+import saffronSilk from "@/assets/saffron_silk.png";
+import majesticRose from "@/assets/majestic_rose.png";
+import sultansSecret from "@/assets/sultans_secret.png";
+import goldenDust from "@/assets/golden_dust.png";
+import royalVelvet from "@/assets/royal_velvet.png";
+
 export interface Product {
   id: string;
   image: string;
@@ -37,9 +45,19 @@ export interface Product {
   description?: string;
   highlights?: string[];
   specs?: Record<string, string>;
+  stock?: number;
+  status?: "In Stock" | "Low Stock" | "Out of Stock";
 }
 
 export const allProducts: Product[] = [
+  { id: "b1", image: imperialOud, name: "Imperial Oud", price: "₹8,499", numericPrice: 8499, gender: "unisex", category: "oud", bestsellerRank: 1, stock: 10, status: "In Stock", description: "A majestic blend of aged Cambodian Oud with hints of leather and spice." },
+  { id: "b2", image: saffronSilk, name: "Saffron Silk", price: "₹4,899", numericPrice: 4899, gender: "unisex", category: "perfumes", bestsellerRank: 2, stock: 15, status: "In Stock", description: "Exotic saffron and soft silk notes for a sophisticated, warm aroma." },
+  { id: "b3", image: majesticRose, name: "Majestic Rose", price: "₹3,799", numericPrice: 3799, gender: "women", category: "perfumes", bestsellerRank: 3, stock: 8, status: "In Stock", description: "True Taifi rose petals distilled into a breathtaking floral masterpiece." },
+  { id: "b4", image: sultansSecret, name: "Sultan's Secret", price: "₹2,599", numericPrice: 2599, gender: "men", category: "attar", bestsellerRank: 4, stock: 20, status: "In Stock", description: "A dark, mysterious fragrance with notes of deep amber and ancient musk." },
+  { id: "b5", image: goldenDust, name: "Golden Dust", price: "₹3,299", numericPrice: 3299, gender: "unisex", category: "perfumes", bestsellerRank: 5, stock: 12, status: "In Stock", description: "Sparkling citrus top notes with a base of golden amber and vanilla." },
+  { id: "b6", image: royalVelvet, name: "Royal Velvet", price: "₹9,999", numericPrice: 9999, gender: "unisex", category: "oud", bestsellerRank: 6, stock: 5, status: "Low Stock", description: "A royal experience of pure deer musk and rich sandalwood." },
+  { id: "b7", image: saffronSilk, name: "Silk Musk", price: "₹2,599", numericPrice: 2599, gender: "unisex", category: "perfumes", bestsellerRank: 7, stock: 15, status: "In Stock", description: "A soft, clean, and elegant white musk fragrance that feels like silk on the skin." },
+  
   { 
     id: "1", 
     image: product1, 
@@ -48,27 +66,29 @@ export const allProducts: Product[] = [
     numericPrice: 3499, 
     gender: "unisex", 
     category: "attar", 
-    bestsellerRank: 1,
     description: "A divine blend of white musk and pure Taifi rose, Noor Al Attar embodies the spiritual light and purity of the holy cities. This concentrated oil is designed to last for over 12 hours, leaving a trail of serenity.",
     highlights: ["Concentrated Oil (CPO)", "100% Alcohol-Free", "Long-lasting (12h+)", "Hand-finished bottle"],
-    specs: { "Volume": "12ml", "Origin": "Taif, Saudi Arabia", "Base": "White Musk", "Notes": "Rose, Amber, Vanilla" }
+    specs: { "Volume": "12ml", "Origin": "Taif, Saudi Arabia", "Base": "White Musk", "Notes": "Rose, Amber, Vanilla" },
+    stock: 12,
+    status: "In Stock"
   },
-  { id: "2", image: product2, name: "Sultan Al Oud", price: "₹2,799", numericPrice: 2799, gender: "men", category: "oud", bestsellerRank: 2 },
-  { id: "3", image: product3, name: "Oud Al Malikah", price: "₹5,999", numericPrice: 5999, gender: "women", category: "oud", bestsellerRank: 3 },
-  { id: "4", image: product4, name: "Bakhoor Al Dar", price: "₹1,899", numericPrice: 1899, gender: "unisex", category: "giftsets", bestsellerRank: 4 },
-  { id: "5", image: product5, name: "Rose Taifi", price: "₹4,299", numericPrice: 4299, gender: "women", category: "attar", bestsellerRank: 5, isNew: true },
-  { id: "6", image: product6, name: "Musk Al Madinah", price: "₹2,199", numericPrice: 2199, gender: "unisex", category: "attar", bestsellerRank: 6 },
-  { id: "7", image: product1, name: "Gentleman's Oud", price: "₹4,199", numericPrice: 4199, gender: "men", category: "oud", bestsellerRank: 7 },
-  { id: "8", image: product2, name: "Desert Rose", price: "₹3,199", numericPrice: 3199, gender: "women", category: "perfumes", bestsellerRank: 8 },
-  { id: "9", image: product3, name: "Midnight Musk", price: "₹2,599", numericPrice: 2599, gender: "men", category: "attar", bestsellerRank: 9, isNew: true },
-  { id: "10", image: product4, name: "Golden Attar", price: "₹1,599", numericPrice: 1599, gender: "unisex", category: "attar", bestsellerRank: 10 },
-  { id: "11", image: product5, name: "Princess Oud", price: "₹5,499", numericPrice: 5499, gender: "women", category: "oud", bestsellerRank: 11 },
-  { id: "12", image: product6, name: "Emperor's Choice", price: "₹6,999", numericPrice: 6999, gender: "men", category: "oud", bestsellerRank: 12 },
+  { id: "2", image: product2, name: "Sultan Al Oud", price: "₹2,799", numericPrice: 2799, gender: "men", category: "oud", stock: 5, status: "Low Stock" },
+  { id: "3", image: product3, name: "Oud Al Malikah", price: "₹5,999", numericPrice: 5999, gender: "women", category: "oud", stock: 0, status: "Out of Stock" },
+  { id: "4", image: product4, name: "Bakhoor Al Dar", price: "₹1,899", numericPrice: 1899, gender: "unisex", category: "giftsets", stock: 24, status: "In Stock" },
+
+  { id: "5", image: product5, name: "Rose Taifi", price: "₹4,299", numericPrice: 4299, gender: "women", category: "attar", isNew: true },
+  { id: "6", image: product6, name: "Musk Al Madinah", price: "₹2,199", numericPrice: 2199, gender: "unisex", category: "attar" },
+  { id: "7", image: product1, name: "Gentleman's Oud", price: "₹4,199", numericPrice: 4199, gender: "men", category: "oud" },
+  { id: "8", image: product2, name: "Desert Rose", price: "₹3,199", numericPrice: 3199, gender: "women", category: "perfumes" },
+  { id: "9", image: product3, name: "Midnight Musk", price: "₹2,599", numericPrice: 2599, gender: "men", category: "attar", isNew: true },
+  { id: "10", image: product4, name: "Golden Attar", price: "₹1,599", numericPrice: 1599, gender: "unisex", category: "attar" },
+  { id: "11", image: product5, name: "Princess Oud", price: "₹5,499", numericPrice: 5499, gender: "women", category: "oud" },
+  { id: "12", image: product6, name: "Emperor's Choice", price: "₹6,999", numericPrice: 6999, gender: "men", category: "oud" },
   { id: "13", image: product1, name: "Noorique", price: "₹4,999", numericPrice: 4999, gender: "unisex", category: "perfumes", isNew: true },
   { id: "14", image: product2, name: "Oudify", price: "₹5,299", numericPrice: 5299, gender: "unisex", category: "oud" },
   { id: "15", image: product3, name: "Jannat Fragrances", price: "₹6,499", numericPrice: 6499, gender: "women", category: "perfumes" },
   { id: "16", image: product4, name: "Barakah Oud", price: "₹7,899", numericPrice: 7899, gender: "unisex", category: "oud" },
-  { id: "17", image: product5, name: "Khalifa Fragrance", price: "₹8,999", numericPrice: 8999, gender: "men", category: "perfumes", bestsellerRank: 3 },
+  { id: "17", image: product5, name: "Khalifa Fragrance", price: "₹8,999", numericPrice: 8999, gender: "men", category: "perfumes" },
   { id: "18", image: product6, name: "Al Rehan Attar", price: "₹2,999", numericPrice: 2999, gender: "unisex", category: "attar" },
   { id: "19", image: product1, name: "Royal Madinah Musk", price: "₹4,599", numericPrice: 4599, gender: "unisex", category: "attar" },
   { id: "20", image: product2, name: "Al Khaas Oud", price: "₹9,999", numericPrice: 9999, gender: "men", category: "oud", isNew: true },

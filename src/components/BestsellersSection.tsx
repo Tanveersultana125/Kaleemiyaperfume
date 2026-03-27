@@ -3,24 +3,17 @@ import { motion } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import ProductCard from "./ProductCard";
 import SectionHeading from "./SectionHeading";
-import product1 from "@/assets/product-1.jpg";
-import product2 from "@/assets/product-2.jpg";
-import product3 from "@/assets/product-3.jpg";
-import product4 from "@/assets/product-4.jpg";
-import product5 from "@/assets/product-5.jpg";
-import product6 from "@/assets/product-6.jpg";
+import { useProducts } from "@/hooks/useProducts";
 
-const bestsellers = [
-  { id: "1", image: product1, name: "Royal Amber", price: "₹3,499" },
-  { id: "2", image: product2, name: "Sultan Attar", price: "₹2,799" },
-  { id: "3", image: product3, name: "Oud Al Malikah", price: "₹5,999" },
-  { id: "4", image: product4, name: "Bakhoor Al Dar", price: "₹1,899" },
-  { id: "5", image: product5, name: "Rose Taifi", price: "₹4,299" },
-  { id: "6", image: product6, name: "Musk Al Tahara", price: "₹2,199" },
-];
+
+
 
 const BestsellersSection = () => {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const { products } = useProducts();
+  const bestsellers = products
+    .filter(p => p.bestsellerRank !== undefined && p.bestsellerRank > 0)
+    .sort((a, b) => (a.bestsellerRank || 0) - (b.bestsellerRank || 0));
 
   const scroll = (dir: "left" | "right") => {
     if (!scrollRef.current) return;
@@ -31,10 +24,10 @@ const BestsellersSection = () => {
   };
 
   return (
-    <section className="section-padding overflow-hidden">
-      <SectionHeading title="Our Bestsellers" subtitle="Timeless fragrances loved by connoisseurs worldwide" />
+    <section className="section-padding overflow-hidden bg-background">
+      <SectionHeading title="Our Bestsellers" subtitle="Timeless fragrances loved by connoisseurs worldwide" light={false} />
 
-      <div className="relative">
+      <div className="relative z-10">
         <div
           ref={scrollRef}
           className="flex gap-4 md:gap-8 overflow-x-auto pb-8 -mx-4 px-4 md:mx-0 md:px-0 scrollbar-hide snap-x snap-mandatory"
