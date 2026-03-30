@@ -47,6 +47,7 @@ export interface Product {
   specs?: Record<string, string>;
   stock?: number;
   status?: "In Stock" | "Low Stock" | "Out of Stock";
+  isLive?: boolean;
 }
 
 export const allProducts: Product[] = [

@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -12,16 +12,49 @@ import IslamicBooks from "./pages/IslamicBooks.tsx";
 import Contact from "./pages/Contact.tsx";
 import ProductDetail from "./pages/ProductDetail.tsx";
 import AdminDashboard from "./pages/AdminDashboard.tsx";
+import AdminLogin from "./pages/AdminLogin.tsx";
+import AdminRequest from "./pages/AdminRequest.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import AIChatbot from "./components/AIChatbot.tsx";
 import WhatsAppButton from "./components/WhatsAppButton.tsx";
-
 import { useState } from "react";
-import SplashScreen from "./components/SplashScreen.tsx";
 import { AnimatePresence } from "framer-motion";
+import SplashScreen from "./components/SplashScreen.tsx";
 import { CartProvider } from "./context/CartContext.tsx";
+import { AuthProvider, useAuth } from "./context/AuthContext.tsx";
 
 const queryClient = new QueryClient();
+
+// Protected Route Component
+const ProtectedAdminRoute = ({ children }: { children: React.ReactNode }) => {
+  const { user, role, loading } = useAuth();
+
+  if (loading) return null; // Or a loader
+
+  if (!user) {
+    return <Navigate to="/admin-login" replace />;
+  }
+
+  if (role !== "admin" && role !== "super_admin") {
+    return <Navigate to="/admin-request" replace />;
+  }
+
+  return <>{children}</>;
+};
+
+const SupportWidgets = () => {
+  // Use current URL to hide widgets on Admin pages
+  const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
+  
+  if (pathname.startsWith("/admin")) return null;
+
+  return (
+    <>
+      <WhatsAppButton />
+      <AIChatbot />
+    </>
+  );
+};
 
 const App = () => {
   const [loading, setLoading] = useState(true);
@@ -29,39 +62,53 @@ const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <CartProvider>
-          <AnimatePresence mode="wait">
-            {loading && <SplashScreen onComplete={() => setLoading(false)} />}
-          </AnimatePresence>
-          
-          {!loading && (
-            <>
-              <Toaster />
-              <Sonner />
-              <BrowserRouter 
-                future={{ 
-                  v7_startTransition: true,
-                  v7_relativeSplatPath: true, 
-                }}
-              >
-                <Routes>
-                  <Route path="/" element={<Index />} />
-                  <Route path="/shop" element={<Shop />} />
-                  <Route path="/attar" element={<Attar />} />
-                  <Route path="/gift-sets" element={<GiftSets />} />
-                  <Route path="/prayer-mats" element={<PrayerMats />} />
-                  <Route path="/books" element={<IslamicBooks />} />
-                  <Route path="/contact" element={<Contact />} />
-                  <Route path="/product/:id" element={<ProductDetail />} />
-                  <Route path="/admin" element={<AdminDashboard />} />
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-                <WhatsAppButton />
-                <AIChatbot />
-              </BrowserRouter>
-            </>
-          )}
-        </CartProvider>
+        <AuthProvider>
+          <CartProvider>
+            <AnimatePresence mode="wait">
+              {loading && <SplashScreen onComplete={() => setLoading(false)} />}
+            </AnimatePresence>
+            
+            {!loading && (
+              <>
+                <Toaster />
+                <Sonner />
+                <BrowserRouter 
+                  future={{ 
+                    v7_startTransition: true,
+                    v7_relativeSplatPath: true, 
+                  }}
+                >
+                  <Routes>
+                    <Route path="/" element={<Index />} />
+                    <Route path="/shop" element={<Shop />} />
+                    <Route path="/attar" element={<Attar />} />
+                    <Route path="/gift-sets" element={<GiftSets />} />
+                    <Route path="/prayer-mats" element={<PrayerMats />} />
+                    <Route path="/books" element={<IslamicBooks />} />
+                    <Route path="/contact" element={<Contact />} />
+                    <Route path="/product/:id" element={<ProductDetail />} />
+                    
+                    {/* Admin Routes */}
+                    <Route path="/admin-login" element={<AdminLogin />} />
+                    <Route path="/admin-request" element={<AdminRequest />} />
+                    <Route 
+                      path="/admin" 
+                      element={
+                        <ProtectedAdminRoute>
+                          <AdminDashboard />
+                        </ProtectedAdminRoute>
+                      } 
+                    />
+                    
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                  
+                  <SupportWidgets />
+                </BrowserRouter>
+              </>
+            )}
+          </CartProvider>
+        </AuthProvider>
       </TooltipProvider>
     </QueryClientProvider>
   );

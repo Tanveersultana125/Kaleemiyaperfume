@@ -12,7 +12,7 @@ const BestsellersSection = () => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const { products } = useProducts();
   const bestsellers = products
-    .filter(p => p.bestsellerRank !== undefined && p.bestsellerRank > 0)
+    .filter(p => p.isLive !== false && p.bestsellerRank !== undefined && p.bestsellerRank > 0)
     .sort((a, b) => (a.bestsellerRank || 0) - (b.bestsellerRank || 0));
 
   const scroll = (dir: "left" | "right") => {

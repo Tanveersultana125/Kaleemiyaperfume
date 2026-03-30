@@ -11,7 +11,7 @@ import { useProducts } from "@/hooks/useProducts";
 const NewArrivalsSection = () => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const { products } = useProducts();
-  const newArrivals = products.filter(p => p.isNew).slice(0, 5);
+  const newArrivals = products.filter(p => p.isLive !== false && p.isNew).slice(0, 5);
 
   const scroll = (dir: "left" | "right") => {
     if (!scrollRef.current) return;

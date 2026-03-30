@@ -50,7 +50,7 @@ const Shop = ({
   }, [initialProductCategory]);
 
   const filteredAndSortedProducts = useMemo(() => {
-    let filtered = [...allProducts];
+    let filtered = [...allProducts].filter(p => p.isLive !== false);
 
     // Filter by search query if present
     if (query) {
