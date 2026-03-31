@@ -27,7 +27,7 @@ const queryClient = new QueryClient();
 
 // Protected Route Component
 const ProtectedAdminRoute = ({ children }: { children: React.ReactNode }) => {
-  const { user, role, loading } = useAuth();
+  const { user, role, loading, isSuperAdmin } = useAuth();
 
   if (loading) return null; // Or a loader
 
@@ -35,7 +35,8 @@ const ProtectedAdminRoute = ({ children }: { children: React.ReactNode }) => {
     return <Navigate to="/admin-login" replace />;
   }
 
-  if (role !== "admin" && role !== "super_admin") {
+  // Grant access if the user is a whitelisted super admin OR has an admin role in the DB
+  if (!isSuperAdmin && role !== "admin") {
     return <Navigate to="/admin-request" replace />;
   }
 

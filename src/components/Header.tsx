@@ -4,6 +4,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
 import MegaMenu from "./MegaMenu";
 import CartDrawer from "./CartDrawer";
+import AnnouncementBanner from "./AnnouncementBanner";
+
 
 
 const navLinks = [
@@ -61,25 +63,10 @@ const Header = () => {
 
   return (
     <header
-      className={`sticky top-0 left-0 right-0 z-50 transition-all duration-300 shadow-sm border-b border-gray-100`}
-      style={{ backgroundColor: headerBg }}
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 shadow-sm border-b border-gray-100 backdrop-blur-md`}
+      style={{ backgroundColor: `${headerBg}F0` }} // Added transparency for blur effect
     >
-      {/* Top Bar (Promo/Live Feed) */}
-      <AnimatePresence>
-        {isLiveEnabled && (
-          <motion.div 
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-            className="w-full bg-[#E5D5C5] py-2 px-4 text-center shadow-sm overflow-hidden"
-          >
-            <p className="text-[10px] md:text-[11px] font-sans tracking-[0.2em] uppercase text-black font-bold">
-              Experience the Essence of Purity ✨
-            </p>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <AnnouncementBanner />
 
       <div className="w-full max-w-none px-6 md:px-12" style={{ backgroundColor: headerBg }}>
         <div className="flex items-center justify-between py-4 md:py-6 gap-6 lg:gap-10">

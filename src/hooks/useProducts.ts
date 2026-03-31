@@ -1,57 +1,90 @@
 import { useState, useEffect } from "react";
-import { allProducts, Product } from "@/data/products";
+import { db } from "@/lib/firebase";
+import { collection, onSnapshot, query, addDoc, updateDoc, deleteDoc, doc, Timestamp } from "firebase/firestore";
 
-export const getStoredProducts = (): Product[] => {
-  const stored = localStorage.getItem("kaleemiya_products");
-  if (stored) {
-    try {
-      return JSON.parse(stored);
-    } catch (e) {
-      console.error("Failed to parse stored products", e);
-    }
-  }
-  return allProducts;
-};
+export interface Product {
+    id: string;
+    name: string;
+    price: string;
+    numericPrice: number;
+    category: string;
+    subCategory?: string;
+    gender: string;
+    image: string;
+    section?: string;
+    stock?: number;
+    status?: string;
+    isLive?: boolean;
+    isNew?: boolean;
+    isBestseller?: boolean;
+    description?: string;
+    highlights?: string[];
+    specs?: Record<string, string>;
+    createdAt?: any;
+    isFallback?: boolean;
+}
 
-export const saveStoredProducts = (products: Product[]) => {
-  localStorage.setItem("kaleemiya_products", JSON.stringify(products));
-  window.dispatchEvent(new Event("products_updated"));
-};
+export const BOUTIQUE_FALLBACKS: Product[] = [];
 
 export const useProducts = () => {
-  const [products, setProducts] = useState<Product[]>(getStoredProducts());
+    const [products, setProducts] = useState<Product[]>([]);
+    const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const handleStorageChange = () => {
-      setProducts(getStoredProducts());
+    useEffect(() => {
+        const q = query(collection(db, "products"));
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const productList = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            } as Product));
+            
+            if (productList.length > 0) {
+                setProducts(productList);
+            } else {
+                setProducts(BOUTIQUE_FALLBACKS);
+            }
+            
+            setLoading(false);
+        }, (error) => {
+            console.error("Error fetching products:", error);
+            setProducts(BOUTIQUE_FALLBACKS);
+            setLoading(false);
+        });
+
+        return () => unsubscribe();
+    }, []);
+
+    const addProduct = async (product: Omit<Product, "id">) => {
+        try {
+            await addDoc(collection(db, "products"), {
+                ...product,
+                createdAt: Timestamp.now()
+            });
+        } catch (error) {
+            console.error("Error adding product:", error);
+            throw error;
+        }
     };
 
-    window.addEventListener("products_updated", handleStorageChange);
-    window.addEventListener("storage", handleStorageChange); // To listen across tabs
-
-    return () => {
-      window.removeEventListener("products_updated", handleStorageChange);
-      window.removeEventListener("storage", handleStorageChange);
+    const updateProduct = async (updatedProduct: Product) => {
+        try {
+            const productRef = doc(db, "products", updatedProduct.id);
+            const { id, isFallback, ...data } = updatedProduct;
+            await updateDoc(productRef, data);
+        } catch (error) {
+            console.error("Error updating product:", error);
+            throw error;
+        }
     };
-  }, []);
 
-  const addProduct = (product: Omit<Product, "id">) => {
-    const newProducts = [...products, { ...product, id: Math.random().toString(36).substr(2, 9) }];
-    setProducts(newProducts);
-    saveStoredProducts(newProducts);
-  };
+    const deleteProduct = async (id: string) => {
+        try {
+            await deleteDoc(doc(db, "products", id));
+        } catch (error) {
+            console.error("Error deleting product:", error);
+            throw error;
+        }
+    };
 
-  const updateProduct = (updatedProduct: Product) => {
-    const newProducts = products.map(p => p.id === updatedProduct.id ? updatedProduct : p);
-    setProducts(newProducts);
-    saveStoredProducts(newProducts);
-  };
-
-  const deleteProduct = (id: string) => {
-    const newProducts = products.filter(p => p.id !== id);
-    setProducts(newProducts);
-    saveStoredProducts(newProducts);
-  };
-
-  return { products, addProduct, updateProduct, deleteProduct };
+    return { products, loading, addProduct, updateProduct, deleteProduct };
 };

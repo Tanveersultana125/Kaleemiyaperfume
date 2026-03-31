@@ -61,9 +61,18 @@ const Shop = ({
       );
     }
 
-    // Filter by type category (Perfumes / Attar / etc)
+    // Filter by type category or special tags
     if (activeCategory !== "all") {
-      filtered = filtered.filter(p => p.category === activeCategory || p.subCategory === activeCategory);
+      const lowerCat = activeCategory.toLowerCase();
+      if (lowerCat === "our bestseller") {
+        filtered = filtered.filter(p => p.isBestseller === true);
+      } else if (lowerCat === "new arrival") {
+        filtered = filtered.filter(p => p.isNew === true);
+      } else if (lowerCat === "tasbhi" || lowerCat === "tasbeeh") {
+        filtered = filtered.filter(p => p.category?.toLowerCase() === "tasbhi" || p.category?.toLowerCase() === "tasbeeh");
+      } else {
+        filtered = filtered.filter(p => p.category?.toLowerCase() === lowerCat || p.subCategory?.toLowerCase() === lowerCat);
+      }
     }
 
     // Filter by gender
@@ -84,14 +93,24 @@ const Shop = ({
         break;
       case "Best selling":
       default:
-        filtered.sort((a, b) => (a.bestsellerRank || 99) - (b.bestsellerRank || 99));
+        filtered.sort((a, b) => (b.isBestseller ? 1 : 0) - (a.isBestseller ? 1 : 0));
         break;
     }
 
     return filtered;
   }, [activeGender, activeSort, activeCategory, query]);
 
-  const productCategories = ["all", "perfumes", "attar", "oud", "giftsets", "prayer mats", "books"];
+  // Extract all unique categories from the live product list
+  const dynamicCategories = useMemo(() => {
+    const rawCategories = Array.from(new Set(
+      allProducts
+        .filter(p => p.isLive !== false)
+        .map(p => p.category?.toLowerCase())
+        .filter(Boolean)
+    ));
+    // Sort them alphabetically, but keep "all" at the start if needed
+    return rawCategories.sort();
+  }, [allProducts]);
 
   return (
     <div className="min-h-screen bg-background text-foreground overflow-x-hidden flex flex-col">
@@ -115,23 +134,42 @@ const Shop = ({
             </div>
             
             <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
-              {[...(hideGenderFilters ? ["ALL"] : categories), ...(extraCategories.length > 0 ? extraCategories : productCategories.filter(c => c !== "all"))].map((cat) => (
+              <button
+                onClick={() => setActiveCategory("all")}
+                className={`text-sm font-serif tracking-widest uppercase transition-all relative py-1 ${
+                  activeCategory === "all"
+                    ? "text-primary border-b-2 border-primary" 
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                ALL
+              </button>
+
+              {dynamicCategories.map((cat) => (
                 <button
                   key={cat}
-                  onClick={() => {
-                    if (categories.includes(cat as any)) {
-                      setActiveGender(cat as any);
-                    } else {
-                      setActiveCategory(cat);
-                    }
-                  }}
+                  onClick={() => setActiveCategory(cat)}
                   className={`text-sm font-serif tracking-widest uppercase transition-all relative py-1 ${
-                    (activeGender === cat || activeCategory === cat)
+                    activeCategory === cat
                       ? "text-primary border-b-2 border-primary" 
                       : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
-                  {cat === "giftsets" ? "Gift Sets" : cat === "prayer mats" ? "Prayer Mats" : cat === "spray" ? "Spray Bottle" : cat === "bukhurdan" ? "Bukhurdan" : cat === "quran box" ? "Quran Box" : cat === "tasbeeh" ? "Tasbeeh" : cat === "english" ? "English" : cat === "roman" ? "Roman" : cat === "urdu" ? "Urdu" : cat === "janimaaz" ? "Janimaaz" : cat}
+                  {cat === "giftsets" ? "Gift Sets" : cat === "prayer mats" ? "Prayer Mats" : cat === "tasbeeh" ? "Tasbeeh" : cat.charAt(0).toUpperCase() + cat.slice(1)}
+                </button>
+              ))}
+
+              {!hideGenderFilters && categories.filter(c => c !== "ALL").map((gen) => (
+                <button
+                  key={gen}
+                  onClick={() => setActiveGender(gen)}
+                  className={`text-sm font-serif tracking-widest uppercase transition-all relative py-1 ${
+                    activeGender === gen
+                      ? "text-primary border-b-2 border-primary" 
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {gen}
                 </button>
               ))}
               
@@ -188,7 +226,7 @@ const Shop = ({
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 justify-items-center">
           {filteredAndSortedProducts.map((p) => (
             <div key={p.id} className="w-full max-w-[300px]">
-              <ProductCard {...p} />
+              <ProductCard {...p} category={p.category} subCategory={p.subCategory} />
             </div>
           ))}
           {filteredAndSortedProducts.length === 0 && (

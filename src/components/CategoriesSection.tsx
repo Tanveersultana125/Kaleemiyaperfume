@@ -5,6 +5,7 @@ import categoryPerfumes from "@/assets/category-perfumes.jpg";
 import categoryAttar from "@/assets/category-attar.jpg";
 import categoryBakhoor from "@/assets/category-bakhoor.jpg";
 import categoryGiftsets from "@/assets/category-giftsets.jpg";
+import categoryTasbeeh from "@/assets/tasbeeh-1.png";
 
 const categories = [
   { image: categoryPerfumes, title: "Perfumes", subtitle: "Signature scents", href: "/shop" },

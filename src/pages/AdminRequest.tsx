@@ -22,7 +22,7 @@ const AdminRequest = () => {
     }
 
     if (user) {
-      const q = query(collection(db, "adminRequests"), where("userId", "==", user.uid));
+      const q = query(collection(db, "adminRequests"), where("uid", "==", user.uid));
       const unsubscribe = onSnapshot(q, (snapshot) => {
         if (!snapshot.empty) {
           const requests = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -46,8 +46,20 @@ const AdminRequest = () => {
 
     setSubmitting(true);
     try {
+      // Check for duplicate again just in case
+      const q = query(collection(db, "adminRequests"), 
+        where("uid", "==", user.uid), 
+        where("status", "in", ["pending", "approved"])
+      );
+      const snapshot = await getDocs(q);
+      if (!snapshot.empty) {
+        toast.error("You already have a pending or approved request.");
+        setSubmitting(false);
+        return;
+      }
+
       await addDoc(collection(db, "adminRequests"), {
-        userId: user.uid,
+        uid: user.uid,
         name: user.displayName || "Unknown User",
         email: user.email,
         reason: reason,

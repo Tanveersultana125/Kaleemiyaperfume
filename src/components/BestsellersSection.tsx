@@ -11,9 +11,7 @@ import { useProducts } from "@/hooks/useProducts";
 const BestsellersSection = () => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const { products } = useProducts();
-  const bestsellers = products
-    .filter(p => p.isLive !== false && p.bestsellerRank !== undefined && p.bestsellerRank > 0)
-    .sort((a, b) => (a.bestsellerRank || 0) - (b.bestsellerRank || 0));
+  const bestsellers = products.filter(p => p.isLive !== false && p.isBestseller);
 
   const scroll = (dir: "left" | "right") => {
     if (!scrollRef.current) return;
@@ -42,7 +40,7 @@ const BestsellersSection = () => {
               transition={{ duration: 0.5, delay: i * 0.05 }}
               className="snap-center shrink-0 w-[75vw] sm:w-[300px] md:w-[320px]"
             >
-              <ProductCard {...p} />
+              <ProductCard {...p} category={p.category} subCategory={p.subCategory} />
             </motion.div>
           ))}
         </div>

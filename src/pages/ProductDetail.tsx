@@ -5,7 +5,7 @@ import { ChevronRight, Star, ShieldCheck, Truck, RotateCcw } from "lucide-react"
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import ProductImageSlider from "@/components/ProductImageSlider";
-import { allProducts } from "@/data/products";
+import { useProducts } from "@/hooks/useProducts";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/context/CartContext";
 import productExtra1 from "@/assets/product-extra-1.png";
@@ -15,18 +15,23 @@ const ProductDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { addToCart } = useCart();
-  const product = allProducts.find((p) => p.id === id);
+  const { products, loading } = useProducts();
+  const product = products.find((p) => p.id === id);
 
   // Scroll to top when this page loads or when navigating to another product perfectly
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: "instant" });
   }, [id]);
 
+  if (loading) {
+     return <div className="min-h-screen flex items-center justify-center font-serif italic text-2xl">Awaiting the Essence...</div>;
+  }
+
   if (!product) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-4">
-        <h2 className="text-2xl font-serif mb-4">Product not found</h2>
-        <Button onClick={() => navigate("/shop")}>Back to Shop</Button>
+        <h2 className="text-2xl font-serif mb-4 text-[#310101]">Boutique Item Not Found</h2>
+        <Button onClick={() => navigate("/shop")} className="bg-[#310101] text-white px-8 py-6 rounded-xl uppercase font-black tracking-widest text-[11px]">Return to Collection</Button>
       </div>
     );
   }
@@ -79,8 +84,11 @@ const ProductDetail = () => {
           {/* Product Info */}
           <div className="lg:col-span-12 lg:col-start-1 xl:col-span-5 space-y-8">
             <header className="space-y-4">
-              <div className="flex items-center gap-4">
-                <span className="text-[10px] text-primary font-sans font-bold tracking-[0.2em] uppercase px-2 py-0.5 border border-primary/30 rounded-full">
+              <div className="flex flex-wrap items-center gap-3">
+                <span className="text-[10px] text-[#B0843D] font-sans font-black tracking-[0.3em] uppercase px-4 py-1 border-2 border-[#B0843D]/20 rounded-full">
+                  {product.category} {product.subCategory && ` — ${product.subCategory}`}
+                </span>
+                <span className="text-[10px] text-black/40 font-sans font-black tracking-[0.2em] uppercase px-4 py-1 bg-gray-50 rounded-full italic">
                   {product.gender}
                 </span>
                 <div className="flex items-center text-amber-500 gap-1">
@@ -145,10 +153,15 @@ const ProductDetail = () => {
                   <span className="bg-border flex-grow h-[1px]"></span>
                 </h4>
                 <div className="grid grid-cols-1 gap-1">
-                  {Object.entries(product.specs).map(([key, value]) => (
+                  {Array.isArray(product.specs) ? product.specs.map((spec: any, idx: number) => (
+                    <div key={idx} className="flex justify-between py-2 border-b border-border/40 last:border-0 text-xs font-sans">
+                      <span className="text-muted-foreground tracking-wide uppercase">{spec.label || "Detail"}</span>
+                      <span className="text-foreground font-medium tracking-wide">{spec.value || "—"}</span>
+                    </div>
+                  )) : Object.entries(product.specs || {}).map(([key, value]: [string, any]) => (
                     <div key={key} className="flex justify-between py-2 border-b border-border/40 last:border-0 text-xs font-sans">
                       <span className="text-muted-foreground tracking-wide uppercase">{key}</span>
-                      <span className="text-foreground font-medium tracking-wide">{value}</span>
+                      <span className="text-foreground font-medium tracking-wide">{typeof value === 'object' ? (value.value || JSON.stringify(value)) : value}</span>
                     </div>
                   ))}
                 </div>

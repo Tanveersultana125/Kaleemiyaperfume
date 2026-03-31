@@ -30,14 +30,14 @@ const NewArrivalsSection = () => {
         >
           {newArrivals.map((p, i) => (
             <motion.div
-              key={p.name}
+              key={p.id}
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, amount: 0.2 }}
               transition={{ duration: 0.6, delay: i * 0.1, ease: [0.16, 1, 0.3, 1] }}
               className="snap-center shrink-0 w-[280px] md:w-auto"
             >
-              <ProductCard {...p} />
+              <ProductCard {...p} category={p.category} subCategory={p.subCategory} />
             </motion.div>
           ))}
         </div>
