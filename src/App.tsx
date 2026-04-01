@@ -22,6 +22,13 @@ import { AnimatePresence } from "framer-motion";
 import SplashScreen from "./components/SplashScreen.tsx";
 import { CartProvider } from "./context/CartContext.tsx";
 import { AuthProvider, useAuth } from "./context/AuthContext.tsx";
+import PrivacyPolicy from "./pages/PrivacyPolicy.tsx";
+import TermsOfService from "./pages/TermsOfService.tsx";
+import RefundPolicy from "./pages/RefundPolicy.tsx";
+import FAQ from "./pages/FAQ.tsx";
+import TrackOrder from "./pages/TrackOrder.tsx";
+import ShippingInfo from "./pages/ShippingInfo.tsx";
+import Returns from "./pages/Returns.tsx";
 
 const queryClient = new QueryClient();
 
@@ -88,6 +95,15 @@ const App = () => {
                     <Route path="/books" element={<IslamicBooks />} />
                     <Route path="/contact" element={<Contact />} />
                     <Route path="/product/:id" element={<ProductDetail />} />
+                    
+                    {/* Policy & Support Routes */}
+                    <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+                    <Route path="/terms-of-service" element={<TermsOfService />} />
+                    <Route path="/refund-policy" element={<RefundPolicy />} />
+                    <Route path="/faq" element={<FAQ />} />
+                    <Route path="/track-order" element={<TrackOrder />} />
+                    <Route path="/shipping-info" element={<ShippingInfo />} />
+                    <Route path="/returns" element={<Returns />} />
                     
                     {/* Admin Routes */}
                     <Route path="/admin-login" element={<AdminLogin />} />

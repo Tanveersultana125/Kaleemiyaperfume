@@ -1,61 +1,46 @@
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, Heart, Crown, Zap, Moon, ChevronRight } from "lucide-react";
+import { Sparkles, Crown, Moon, ChevronRight, Package, Tag, Layers } from "lucide-react";
 import { Link } from "react-router-dom";
+import { db } from "@/lib/firebase";
+import { doc, onSnapshot } from "firebase/firestore";
 
 interface MegaMenuProps {
   isOpen: boolean;
   onMouseEnter: () => void;
   onMouseLeave: () => void;
+  onClose: () => void;
 }
 
-const megaMenuData = [
-  {
-    title: "Pure Arabic Feel",
-    icon: <Sparkles className="w-4 h-4 text-primary" />,
-    items: [
-      "Noor Al Attar", "Jannat Fragrances", "Musk Al Madinah", "Oud Al Noor", 
-      "Al Rehan Attar", "Attar Al Barakah", "Al Firdous Perfumes", "Sabeel Fragrance", 
-      "Rihlat Al Oud", "Al Abeer Attar"
-    ]
-  },
-  {
-    title: "Spiritual Names",
-    icon: <Heart className="w-4 h-4 text-primary" />,
-    items: [
-      "Noor Essence", "Jannah Scents", "Barakah Oud", "Rahma Fragrance", 
-      "Tayyib Attar", "Imaan Scents", "Sakinah Perfumes", "Hidayah Fragrance", 
-      "Rizwaan Attar", "Ikhlas Oud"
-    ]
-  },
-  {
-    title: "Royal Islamic Vibe",
-    icon: <Crown className="w-4 h-4 text-primary" />,
-    items: [
-      "Sultan Al Oud", "Royal Madinah Musk", "Khalifa Fragrance", "Qasr Al Oud", 
-      "Diwan Perfumes", "Zafran Attar", "Misk Royale", "Al Zahra Perfumes", 
-      "Shaheen Oud", "Aswad Luxury Attar"
-    ]
-  },
-  {
-    title: "Modern & Brandable",
-    icon: <Zap className="w-4 h-4 text-primary" />,
-    items: [
-      "Noorique", "Oudify", "Attarza", "Muskify", "Rehanique", 
-      "Oudora", "Scentara", "Zayra Oud", "Abeerly", "Noorza"
-    ]
-  },
-  {
-    title: "Traditional Arabic",
-    icon: <Moon className="w-4 h-4 text-primary" />,
-    items: [
-      "Al Khaas Oud", "Dahn Al Oud", "Al Qamar Attar", "Layl Fragrance", 
-      "Al Misbah", "Al Anbar Attar", "Al Waha Perfumes", "Bait Al Oud", 
-      "Al Rawdah Scents", "Dar Al Attar"
-    ]
-  }
-];
+const MegaMenu = ({ isOpen, onMouseEnter, onMouseLeave, onClose }: MegaMenuProps) => {
+  const [categories, setCategories] = useState<string[]>([]);
+  const [subCategories, setSubCategories] = useState<Record<string, string[]>>({});
+  const [loading, setLoading] = useState(true);
 
-const MegaMenu = ({ isOpen, onMouseEnter, onMouseLeave }: MegaMenuProps) => {
+  useEffect(() => {
+    const unsub = onSnapshot(doc(db, "metadata", "categories"), (snap) => {
+      if (snap.exists()) {
+        const data = snap.data();
+        setCategories(data.list || []);
+        setSubCategories(data.subs || {});
+      }
+      setLoading(false);
+    });
+    return () => unsub();
+  }, []);
+
+  const getIcon = (index: number) => {
+    const icons = [
+      <Sparkles className="w-4 h-4 text-[#B0843D]" />,
+      <Crown className="w-4 h-4 text-[#B0843D]" />,
+      <Moon className="w-4 h-4 text-[#B0843D]" />,
+      <Layers className="w-4 h-4 text-[#B0843D]" />,
+      <Package className="w-4 h-4 text-[#B0843D]" />,
+      <Tag className="w-4 h-4 text-[#B0843D]" />
+    ];
+    return icons[index % icons.length];
+  };
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -66,48 +51,85 @@ const MegaMenu = ({ isOpen, onMouseEnter, onMouseLeave }: MegaMenuProps) => {
           transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
           onMouseEnter={onMouseEnter}
           onMouseLeave={onMouseLeave}
-          className="absolute top-20 left-0 right-0 bg-[#4A0101] border-b border-primary/20 shadow-[0_20px_50px_rgba(0,0,0,0.5)] z-40 overflow-hidden"
+          className="absolute top-[100%] left-0 right-0 bg-[#FDFCFB] border-b border-[#B0843D]/10 shadow-[0_40px_80px_rgba(49,1,1,0.15)] z-[60] overflow-hidden"
         >
-          <div className="max-w-[1440px] mx-auto px-6 md:px-12 lg:px-20 py-12">
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-10">
-              {megaMenuData.map((category) => (
-                <div key={category.title} className="space-y-6">
-                  <div className="flex items-center gap-3 border-b border-border/50 pb-3">
-                    {category.icon}
-                    <h3 className="font-serif text-sm uppercase tracking-[0.2em] font-bold text-foreground/90">
-                      {category.title}
-                    </h3>
-                  </div>
-                  <ul className="space-y-3">
-                    {category.items.map((item) => (
-                      <li key={item} className="group flex items-center gap-2">
-                        <ChevronRight className="w-3 h-3 text-primary/30 group-hover:text-primary transition-colors" />
+          <div className="max-w-[1440px] mx-auto px-6 md:px-12 lg:px-20 py-16">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-12">
+              {categories.map((cat, idx) => (
+                <div key={cat} className="space-y-6 group/col">
+                  <Link 
+                    to={`/shop?category=${encodeURIComponent(cat.toLowerCase())}`}
+                    onClick={onClose}
+                    className="flex items-center gap-3 border-b border-[#310101]/10 pb-4 group/head"
+                  >
+                    <div className="p-2 bg-[#F9F6F2] rounded-lg group-hover/head:bg-[#310101] group-hover/head:text-[#E5D5C5] transition-colors duration-500">
+                       {getIcon(idx)}
+                    </div>
+                    <div>
+                      <h3 className="font-serif text-[15px] uppercase tracking-[0.2em] font-black text-[#310101] group-hover/head:text-[#B0843D] transition-colors">
+                        {cat}
+                      </h3>
+                      <p className="text-[14px] text-[#B0843D] font-black uppercase tracking-widest opacity-40">Collection</p>
+                    </div>
+                  </Link>
+                  <ul className="space-y-4">
+                    {(subCategories[cat] || ["General Selection"]).map((sub) => (
+                      <li key={sub} className="group/item flex items-center gap-3">
+                        <div className="w-1.5 h-[1px] bg-[#B0843D]/20 group-hover/item:w-4 group-hover/item:bg-[#B0843D] transition-all duration-300" />
                         <Link 
-                          to={`/shop?search=${encodeURIComponent(item)}`}
-                          className="text-muted-foreground font-sans text-xs tracking-wide hover:text-primary transition-colors inline-block"
+                          to={`/shop?category=${encodeURIComponent(cat.toLowerCase())}&subcategory=${encodeURIComponent(sub.toLowerCase())}`}
+                          onClick={onClose}
+                          className="text-[#310101] font-sans text-[14px] font-bold tracking-wide hover:text-[#B0843D] transition-colors inline-block uppercase"
                         >
-                          {item}
+                          {sub}
                         </Link>
                       </li>
                     ))}
+                    <li className="pt-2">
+                       <Link 
+                         to={`/shop?category=${encodeURIComponent(cat.toLowerCase())}`}
+                         onClick={onClose}
+                         className="text-[14px] font-black uppercase tracking-widest text-[#B0843D]/90 hover:text-[#310101] transition-colors flex items-center gap-2"
+                       >
+                         View All {cat} <ChevronRight className="w-3 h-3" />
+                       </Link>
+                    </li>
                   </ul>
                 </div>
               ))}
             </div>
             
-            <div className="mt-12 pt-8 border-t border-border/20 flex items-center justify-between">
-              <div className="flex items-center gap-6">
-                <p className="text-muted-foreground font-sans text-xs uppercase tracking-[0.1em]">Explore by Mood:</p>
-                <div className="flex gap-4">
-                  {["Morning Scent", "Evening Oud", "Wedding Musk", "Daily Fresh"].map(mood => (
-                    <span key={mood} className="px-3 py-1 rounded-full bg-muted/30 text-[10px] uppercase tracking-wider text-muted-foreground hover:text-primary cursor-pointer transition-colors">
-                      {mood}
-                    </span>
+            <div className="mt-16 pt-10 border-t border-[#310101]/5 flex flex-col md:flex-row items-center justify-between gap-8">
+              <div className="flex items-center gap-8">
+                <div className="hidden md:flex flex-col">
+                   <p className="text-[14px] font-black text-[#310101]/80 uppercase tracking-[0.2em]">Heritage Curation</p>
+                   <p className="text-sm font-serif italic text-[#310101]">Hand-picked excellence by Kaleemiya</p>
+                </div>
+                <div className="h-10 w-[1px] bg-[#310101]/10 hidden md:block" />
+                <div className="flex flex-wrap gap-4">
+                  {[
+                    { name: "New Arrivals", slug: "new arrival" },
+                    { name: "Bestsellers", slug: "our bestseller" },
+                    { name: "Limited Edition", slug: "limited edition" }
+                  ].map(tag => (
+                    <Link 
+                      key={tag.name}
+                      to={`/shop?category=${encodeURIComponent(tag.slug)}`}
+                      onClick={onClose}
+                      className="px-5 py-2 rounded-full border border-[#B0843D]/20 text-[14px] font-black uppercase tracking-wider text-[#310101] hover:bg-[#310101] hover:text-[#E5D5C5] transition-all duration-300"
+                    >
+                      {tag.name}
+                    </Link>
                   ))}
                 </div>
               </div>
-              <Link to="/shop" className="text-primary font-sans text-xs uppercase tracking-[0.2em] font-bold hover:underline">
-                View All Collections
+              <Link 
+                to="/shop" 
+                onClick={onClose}
+                className="group flex items-center gap-4 bg-[#310101] text-[#E5D5C5] px-10 py-5 rounded-full shadow-2xl hover:scale-105 transition-all duration-500"
+              >
+                <span className="text-[14px] font-black uppercase tracking-[0.2em]">Explore Entire Boutique</span>
+                <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </Link>
             </div>
           </div>

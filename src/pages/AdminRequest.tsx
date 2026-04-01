@@ -93,7 +93,7 @@ const AdminRequest = () => {
             </div>
             <div className="space-y-2">
               <h1 className="text-4xl font-serif font-black text-black">Admin Access Request</h1>
-              <p className="text-black/50 font-bold uppercase tracking-widest text-[11px]">Boutique Authority Portal</p>
+              <p className="text-black/50 font-bold uppercase tracking-widest text-[15px]">Boutique Authority Portal</p>
             </div>
           </div>
 
@@ -103,7 +103,7 @@ const AdminRequest = () => {
               <p className="text-green-700 font-medium italic">You are currently logged in as an {role}.</p>
               <button 
                 onClick={() => navigate("/admin")}
-                className="w-full bg-[#310101] text-white py-5 rounded-[22px] font-black uppercase tracking-widest text-[12px] shadow-xl hover:scale-105 transition-transform"
+                className="w-full bg-[#310101] text-white py-5 rounded-[22px] font-black uppercase tracking-widest text-[14px] shadow-xl hover:scale-105 transition-transform"
               >
                 Go to Admin Dashboard
               </button>
@@ -126,7 +126,7 @@ const AdminRequest = () => {
               {existingRequest.status === "rejected" && (
                 <button 
                   onClick={() => setExistingRequest(null)}
-                  className="w-full bg-[#310101] text-white py-5 rounded-[22px] font-black uppercase tracking-widest text-[12px] mt-4"
+                  className="w-full bg-[#310101] text-white py-5 rounded-[22px] font-black uppercase tracking-widest text-[14px] mt-4"
                 >
                   Submit New Request
                 </button>
@@ -135,7 +135,7 @@ const AdminRequest = () => {
           ) : (
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-2">
-                <label className="text-[11px] font-black uppercase tracking-[0.3em] text-black/40 ml-1">Why do you need admin access?</label>
+                <label className="text-[15px] font-black uppercase tracking-[0.3em] text-black/40 ml-1">Why do you need admin access?</label>
                 <textarea
                   value={reason}
                   onChange={(e) => setReason(e.target.value)}
@@ -147,7 +147,7 @@ const AdminRequest = () => {
               <button 
                 type="submit"
                 disabled={submitting}
-                className="w-full bg-[#310101] text-white py-6 rounded-[30px] font-black uppercase tracking-[0.3em] text-[13px] hover:scale-[1.02] active:scale-[0.98] transition-all shadow-2xl disabled:opacity-50 disabled:cursor-not-allowed group"
+                className="w-full bg-[#310101] text-white py-6 rounded-[30px] font-black uppercase tracking-[0.3em] text-[15px] hover:scale-[1.02] active:scale-[0.98] transition-all shadow-2xl disabled:opacity-50 disabled:cursor-not-allowed group"
               >
                 {submitting ? (
                   <Loader2 className="w-5 h-5 animate-spin mx-auto" />
@@ -163,7 +163,7 @@ const AdminRequest = () => {
           <div className="pt-6 border-t border-gray-50 flex justify-center">
             <button 
               onClick={() => navigate("/")}
-              className="text-[11px] font-black uppercase tracking-widest text-black/30 hover:text-[#310101] transition-colors"
+              className="text-[15px] font-black uppercase tracking-widest text-black/30 hover:text-[#310101] transition-colors"
             >
               Return to Storefront
             </button>

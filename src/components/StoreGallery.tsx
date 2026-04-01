@@ -30,7 +30,7 @@ const StoreGallery = () => {
             initial={{ opacity: 0, y: 10 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="text-primary font-sans text-xs uppercase tracking-[0.3em] font-bold mb-4 block"
+            className="text-primary font-sans text-sm uppercase tracking-[0.3em] font-bold mb-4 block"
           >
             Our Boutique
           </motion.span>

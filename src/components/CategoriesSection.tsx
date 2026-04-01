@@ -8,10 +8,10 @@ import categoryGiftsets from "@/assets/category-giftsets.jpg";
 import categoryTasbeeh from "@/assets/tasbeeh-1.png";
 
 const categories = [
-  { image: categoryPerfumes, title: "Perfumes", subtitle: "Signature scents", href: "/shop" },
-  { image: categoryAttar, title: "Attar", subtitle: "Pure oil fragrances", href: "/shop" },
-  { image: categoryBakhoor, title: "Bakhoor", subtitle: "Traditional incense", href: "/shop" },
-  { image: categoryGiftsets, title: "Gift Sets", subtitle: "Curated collections", href: "/shop" },
+  { image: categoryPerfumes, title: "Perfumes", subtitle: "Signature scents", href: "/shop?category=perfumes" },
+  { image: categoryAttar, title: "Attar", subtitle: "Pure oil fragrances", href: "/shop?category=attar" },
+  { image: categoryBakhoor, title: "Bakhoor", subtitle: "Traditional incense", href: "/shop?category=bakhoor" },
+  { image: categoryGiftsets, title: "Gift Sets", subtitle: "Curated collections", href: "/shop?category=giftsets" },
 ];
 
 const CategoriesSection = () => {

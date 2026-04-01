@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Search, Menu, X, ChevronDown, ShoppingBag, User } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "@/context/AuthContext";
 import MegaMenu from "./MegaMenu";
 import CartDrawer from "./CartDrawer";
 import AnnouncementBanner from "./AnnouncementBanner";
@@ -18,13 +19,30 @@ const navLinks = [
   { name: "Contact", href: "/contact" }
 ];
 
+import AccountDrawer from "./AccountDrawer";
+
 const Header = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [megaMenuOpen, setMegaMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [accountOpen, setAccountOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [megaMenuTimer, setMegaMenuTimer] = useState<any>(null);
+
+  const handleOpenMegaMenu = () => {
+    if (megaMenuTimer) clearTimeout(megaMenuTimer);
+    setMegaMenuOpen(true);
+  };
+
+  const handleCloseMegaMenu = () => {
+    const timer = setTimeout(() => {
+      setMegaMenuOpen(false);
+    }, 300); // 300ms delay to help mouse reach menu
+    setMegaMenuTimer(timer);
+  };
 
   const [isLiveEnabled, setIsLiveEnabled] = useState(true);
 
@@ -62,6 +80,7 @@ const Header = () => {
   const headerBg = "#F9F6F2"; 
 
   return (
+    <>
     <header
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 shadow-sm border-b border-gray-100 backdrop-blur-md`}
       style={{ backgroundColor: `${headerBg}F0` }} // Added transparency for blur effect
@@ -93,16 +112,33 @@ const Header = () => {
                 { name: "Books", path: "/books" },
                 { name: "Contact", path: "/contact" },
                 { name: "All Collections", path: "/shop" },
+                { name: "Track Order", path: "/track-order" },
               ].map((link, idx, arr) => (
                 <li key={link.name} className="flex items-center shrink-0">
-                  <Link
-                    to={link.path}
-                    className="text-[12px] lg:text-[14px] font-bold uppercase tracking-[0.15em] text-black hover:text-black/70 hover:bg-black/5 py-2.5 px-3 lg:px-4 rounded-md transition-all whitespace-nowrap"
-                  >
-                    {link.name}
-                  </Link>
+                  {link.name === "All Collections" ? (
+                    <div 
+                      onMouseEnter={handleOpenMegaMenu}
+                      onMouseLeave={handleCloseMegaMenu}
+                      className="relative h-full flex items-center"
+                    >
+                      <Link
+                        to={link.path}
+                        className="text-[14px] lg:text-[14px] font-bold uppercase tracking-[0.15em] text-black hover:text-black/70 hover:bg-black/5 py-2.5 px-3 lg:px-4 rounded-md transition-all whitespace-nowrap"
+                      >
+                        {link.name}
+                        <ChevronDown className={`inline-block ml-1 w-3 h-3 transition-transform ${megaMenuOpen ? "rotate-180" : ""}`} />
+                      </Link>
+                    </div>
+                  ) : (
+                    <Link
+                      to={link.path}
+                      className="text-[14px] lg:text-[14px] font-bold uppercase tracking-[0.15em] text-black hover:text-black/70 hover:bg-black/5 py-2.5 px-3 lg:px-4 rounded-md transition-all whitespace-nowrap"
+                    >
+                      {link.name}
+                    </Link>
+                  )}
                   {idx < arr.length - 1 && (
-                    <span className="text-black/10 text-xs mx-1 font-extralight select-none opacity-50">|</span>
+                    <span className="text-black/10 text-sm mx-1 font-medium select-none opacity-50">|</span>
                   )}
                 </li>
               ))}
@@ -123,14 +159,19 @@ const Header = () => {
                   }
                 }}
                 placeholder="Search..."
-                className="w-full bg-black/5 border border-transparent rounded-full py-2 px-5 pr-10 text-[11px] text-black placeholder:text-black/40 focus:outline-none focus:bg-white focus:border-black/10 transition-all font-sans"
+                className="w-full bg-black/5 border border-transparent rounded-full py-2 px-5 pr-10 text-[15px] text-black placeholder:text-black/40 focus:outline-none focus:bg-white focus:border-black/10 transition-all font-sans"
               />
               <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-black/40" />
             </div>
 
-            <button className="text-black hover:text-black/70 transition-colors hidden sm:flex items-center gap-2 group">
+            <button 
+              onClick={() => setAccountOpen(true)}
+              className="text-black hover:text-black/70 transition-colors hidden sm:flex items-center gap-2 group"
+            >
               <User className="w-4 h-4 md:w-4.5 md:h-4.5" />
-              <span className="text-[10px] lg:text-[11px] uppercase tracking-widest text-black group-hover:text-black/70 font-bold whitespace-nowrap">Account</span>
+              <span className="text-[14px] lg:text-[15px] uppercase tracking-widest text-black group-hover:text-black/70 font-bold whitespace-nowrap">
+                {user ? user.displayName?.split(" ")[0] : "Account"}
+              </span>
             </button>
             <Search className="lg:hidden w-5 h-5 text-black" onClick={() => setSearchOpen(!searchOpen)} />
             <CartDrawer />
@@ -148,8 +189,9 @@ const Header = () => {
 
       <MegaMenu 
         isOpen={megaMenuOpen} 
-        onMouseEnter={() => setMegaMenuOpen(true)}
-        onMouseLeave={() => setMegaMenuOpen(false)}
+        onMouseEnter={handleOpenMegaMenu}
+        onMouseLeave={handleCloseMegaMenu}
+        onClose={() => setMegaMenuOpen(false)}
       />
 
       {/* Mobile menu */}
@@ -184,7 +226,7 @@ const Header = () => {
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: navLinks.length * 0.05, duration: 0.5 }}
-                className="mt-4 px-8 py-4 border border-black/30 text-[10px] tracking-[0.3em] uppercase text-black font-bold hover:bg-black/5 active:bg-black/10 transition-all"
+                className="mt-4 px-8 py-4 border border-black/30 text-[14px] tracking-[0.3em] uppercase text-black font-bold hover:bg-black/5 active:bg-black/10 transition-all"
                 onClick={() => {
                   setMobileOpen(false);
                   setMegaMenuOpen(true);
@@ -192,11 +234,21 @@ const Header = () => {
               >
                 All Collections
               </motion.button>
+              
+              <button 
+                onClick={() => { setMobileOpen(false); setAccountOpen(true); }}
+                className="flex items-center gap-2 text-black/60 font-bold uppercase tracking-widest text-[13px] border-t border-gray-100 w-full justify-center pt-8"
+              >
+                 <User size={14} /> {user ? "View My Profile" : "Sign In / Join"}
+              </button>
             </nav>
           </motion.div>
         )}
       </AnimatePresence>
     </header>
+
+    <AccountDrawer isOpen={accountOpen} onClose={() => setAccountOpen(false)} />
+    </>
   );
 };
 

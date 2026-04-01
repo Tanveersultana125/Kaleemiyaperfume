@@ -31,7 +31,7 @@ const WhatsAppButton = () => {
 
         {/* Tooltip */}
         <div className="absolute right-full mr-3 bg-[#128C7E] text-white border-l-4 border-l-[#25D366] py-1.5 px-3 rounded-lg shadow-xl whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none hidden md:block">
-          <p className="text-[10px] uppercase font-sans tracking-[0.2em] font-bold">
+          <p className="text-[14px] uppercase font-sans tracking-[0.2em] font-bold">
             WhatsApp Us
           </p>
         </div>

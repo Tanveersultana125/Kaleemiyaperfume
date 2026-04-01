@@ -27,7 +27,7 @@ const HeroSection = () => {
             transition={{ duration: 1, delay: 0.5 }}
             className="mb-4"
           >
-            <span className="text-white/95 text-[10px] md:text-xs font-sans tracking-[0.4em] uppercase font-bold">
+            <span className="text-white/95 text-[14px] md:text-sm font-sans tracking-[0.4em] uppercase font-bold">
               Kaleemiya Perfumes
             </span>
           </motion.div>
@@ -36,7 +36,7 @@ const HeroSection = () => {
             initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1.2, delay: 0.7 }}
-            className="text-5xl md:text-7xl lg:text-8xl font-serif font-light leading-[1] mb-8 text-white"
+            className="text-5xl md:text-7xl lg:text-8xl font-serif font-medium leading-[1] mb-8 text-white"
           >
             Experience the
             <br />
@@ -49,7 +49,7 @@ const HeroSection = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 1.1 }}
-            className="text-white/90 text-lg md:text-xl font-light font-sans max-w-md mb-12 leading-relaxed"
+            className="text-white/90 text-lg md:text-xl font-medium font-sans max-w-md mb-12 leading-relaxed"
           >
             Inspired by tradition, crafted with elegance. Pure attars and oud fragrances for the discerning soul.
           </motion.p>

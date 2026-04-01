@@ -53,18 +53,18 @@ const AdminLogin = () => {
           <div className="space-y-6">
             <div className="inline-flex items-center gap-3 bg-white/10 px-4 py-1.5 rounded-full border border-white/10">
               <ShieldAlert className="w-4 h-4 text-[#B0843D]" />
-              <span className="text-[10px] font-black uppercase tracking-[0.3em] text-[#B0843D]">Access Protocol Verification</span>
+              <span className="text-[14px] font-black uppercase tracking-[0.3em] text-[#B0843D]">Access Protocol Verification</span>
             </div>
             <h1 className="text-7xl font-serif font-black tracking-tighter leading-[0.9] italic lowercase first-letter:uppercase">Boutique authority</h1>
-            <p className="text-xl font-medium text-white/40 max-w-lg leading-relaxed uppercase tracking-widest text-[13px]">
+            <p className="text-xl font-medium text-white/40 max-w-lg leading-relaxed uppercase tracking-widest text-[15px]">
               Access restricted to the administrative elite of <span className="text-white font-black">Kaleemiya Perfumes</span>.
             </p>
           </div>
         </div>
 
         <div className="relative z-10 space-y-2 opacity-30 mt-12">
-          <p className="text-[11px] font-black uppercase tracking-[0.5em]">Luxe Management Suite</p>
-          <p className="text-[10px] font-bold uppercase tracking-widest leading-relaxed">Secured with enterprise-grade encryption • v4.2.0-Elite</p>
+          <p className="text-[15px] font-black uppercase tracking-[0.5em]">Luxe Management Suite</p>
+          <p className="text-[14px] font-bold uppercase tracking-widest leading-relaxed">Secured with enterprise-grade encryption • v4.2.0-Elite</p>
         </div>
       </div>
 
@@ -83,14 +83,14 @@ const AdminLogin = () => {
             >
               <div className="absolute inset-0 bg-[#B0843D] translate-y-full group-hover:translate-y-0 transition-transform duration-500 opacity-10"></div>
               <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-7 h-7 bg-white p-1 rounded-full relative z-10" />
-              <span className="text-[13px] font-black uppercase tracking-[0.3em] relative z-10">Authorize Access</span>
+              <span className="text-[15px] font-black uppercase tracking-[0.3em] relative z-10">Authorize Access</span>
             </button>
 
             <div className="flex flex-col items-center gap-4 pt-6 border-t border-gray-50">
-              <p className="text-[12px] font-black text-black/30 uppercase tracking-widest">New team member?</p>
+              <p className="text-[14px] font-black text-black/30 uppercase tracking-widest">New team member?</p>
               <button 
                 onClick={() => navigate("/admin-request")}
-                className="text-[11px] font-black uppercase tracking-widest text-[#B0843D] hover:text-[#310101] transition-colors pb-1 border-b border-[#B0843D]/20 animate-pulse"
+                className="text-[15px] font-black uppercase tracking-widest text-[#B0843D] hover:text-[#310101] transition-colors pb-1 border-b border-[#B0843D]/20 animate-pulse"
               >
                 Apply for Admin Authority
               </button>
@@ -98,7 +98,7 @@ const AdminLogin = () => {
           </div>
 
           <div className="pt-12 text-center opacity-20">
-            <p className="text-[10px] font-bold uppercase tracking-widest">© Kaleemiya Perfumes • All Rights Reserved</p>
+            <p className="text-[14px] font-bold uppercase tracking-widest">© Kaleemiya Perfumes • All Rights Reserved</p>
           </div>
         </div>
       </div>

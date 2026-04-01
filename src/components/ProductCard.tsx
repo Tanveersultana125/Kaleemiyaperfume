@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useCart } from "@/context/CartContext";
-import { useActiveAnnouncements } from "@/hooks/useActiveAnnouncements";
+import { Star, ShoppingCart } from "lucide-react";
 
 interface ProductCardProps {
   id: string;
@@ -17,20 +17,17 @@ interface ProductCardProps {
 const ProductCard = ({ id, image, name, price, isNew, category, subCategory, discountPrice }: ProductCardProps) => {
   const navigate = useNavigate();
   const { addToCart } = useCart();
-  const { getDiscountForProduct } = useActiveAnnouncements();
 
-  const broadcastDiscountPercent = getDiscountForProduct(category || "", subCategory);
-  
-  // Rule: Manual discountPrice takes priority. If not present, check for broadcast discount.
+  // Simple Manual Discount Logic
   let activeDiscountPrice = discountPrice;
   let activeDiscountPercent = 0;
 
   if (discountPrice) {
-    activeDiscountPercent = Math.round(((parseInt(price?.replace(/[^\d]/g, "") || "0") - parseInt(discountPrice)) / parseInt(price?.replace(/[^\d]/g, "") || "1")) * 100);
-  } else if (broadcastDiscountPercent > 0) {
     const rawPrice = parseInt(price?.replace(/[^\d]/g, "") || "0");
-    activeDiscountPrice = Math.round(rawPrice * (1 - broadcastDiscountPercent / 100)).toString();
-    activeDiscountPercent = broadcastDiscountPercent;
+    const rawDiscount = parseInt(discountPrice?.replace(/[^\d]/g, "") || "0");
+    if (rawPrice > 0 && rawDiscount > 0) {
+      activeDiscountPercent = Math.round(((rawPrice - rawDiscount) / rawPrice) * 100);
+    }
   }
 
   const handleAddToCart = (e: React.MouseEvent) => {
@@ -44,57 +41,66 @@ const ProductCard = ({ id, image, name, price, isNew, category, subCategory, dis
 
   return (
     <motion.div
-      className="group flex-shrink-0 w-full sm:w-[280px] md:w-[300px] cursor-pointer bg-white border border-black/5 hover:border-primary/40 transition-all duration-500 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl"
+      className="group flex-shrink-0 w-full sm:w-[280px] md:w-[320px] cursor-pointer bg-[#F8F9F9] border border-gray-100 hover:border-[#dda74f]/40 transition-all duration-300 rounded-xl overflow-hidden shadow-sm hover:shadow-xl flex flex-col"
       onClick={() => navigate(`/product/${id}`)}
     >
-      <div className="relative aspect-square overflow-hidden m-3 rounded-xl bg-gray-50/50">
+      <div className="relative aspect-square sm:aspect-[4/5] overflow-hidden bg-white rounded-t-xl">
         <img
           src={image}
           alt={name}
-          className="w-full h-full object-contain transition-transform duration-700 group-hover:scale-105"
+          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
           loading="lazy"
         />
         {isNew && (
-          <span className="absolute top-3 left-3 z-10 bg-primary text-white text-[8px] font-sans font-bold tracking-[0.2em] uppercase px-2 py-1 rounded-full shadow-lg">
+          <span className="absolute top-3 left-3 z-10 bg-black text-white text-[14px] font-medium tracking-wider uppercase px-2 py-1 rounded-sm shadow-sm">
             New
-          </span>
-        )}
-        {activeDiscountPercent > 0 && (
-          <span className="absolute top-3 right-3 z-10 bg-red-600 text-white text-[8px] font-sans font-bold tracking-[0.2em] uppercase px-2 py-1 rounded-full shadow-lg animate-pulse">
-            SALE {activeDiscountPercent}% OFF
           </span>
         )}
       </div>
 
-      <div className="px-5 pb-5 pt-2 flex flex-col gap-1 text-left bg-white">
-        {(category || subCategory) && (
-          <span className="text-[9px] text-primary/80 font-sans tracking-widest uppercase mb-1">
-            {category}{subCategory ? ` , ${subCategory}` : ""}
-          </span>
-        )}
-        <h3 className="font-sans font-bold text-sm md:text-base text-[#310101] mb-1 leading-tight tracking-tight uppercase group-hover:text-primary transition-colors">
+      <div className="px-4 pb-4 flex flex-col flex-1 text-left bg-[#F8F9F9] relative">
+        
+        {/* Rating Right Below Image aligned to Right */}
+        <div className="flex justify-end mb-1 mt-2">
+          <div className="bg-[#f0f0f0] rounded-full px-2 py-1 flex items-center gap-1 z-10 relative">
+             <Star size={11} className="text-[#BFA15F] fill-[#BFA15F]" />
+             <span className="text-[15px] text-[#555] font-medium tracking-tight">4.2 | 10</span>
+          </div>
+        </div>
+
+        {/* Product Title */}
+        <h3 className="font-sans text-[16px] md:text-[18px] text-[#C29D59] mb-2 leading-snug line-clamp-2">
           {name}
         </h3>
-        <div className="flex items-center gap-2 mb-4">
-          <p className="text-[14px] lg:text-[16px] font-sans font-bold text-black flex items-center gap-3">
-            {activeDiscountPrice ? (
-              <>
-                <span className="text-[#310101]">₹{parseInt(activeDiscountPrice.replace(/[^\d]/g, "")).toLocaleString()}</span>
-                <span className="text-black/30 line-through text-[12px] font-normal font-sans">
-                  {price}
-                </span>
-              </>
-            ) : (
-              <span className="text-primary">{price}</span>
-            )}
-          </p>
+
+        {/* Price Row */}
+        <div className="flex flex-wrap items-center gap-2 mb-4 mt-auto">
+          {activeDiscountPrice ? (
+            <>
+               <span className="text-[24px] font-bold text-[#111] leading-none">
+                 ₹{parseInt(activeDiscountPrice.replace(/[^\d]/g, "")).toLocaleString()}
+               </span>
+               <span className="text-[#747e8e] line-through text-[15px] font-medium">
+                 {price}
+               </span>
+               {activeDiscountPercent > 0 && (
+                 <span className="bg-[#489b6f] text-white text-[15px] font-bold px-1.5 py-[2px] rounded tracking-wide ml-1">
+                   {activeDiscountPercent}% off
+                 </span>
+               )}
+            </>
+          ) : (
+             <span className="text-[24px] font-bold text-[#111] leading-none">{price}</span>
+          )}
         </div>
-        
+
+        {/* ADD TO CART Button */}
         <button 
           onClick={handleAddToCart}
-          className="w-full h-11 bg-[#310101] hover:bg-black text-white font-sans font-bold uppercase tracking-[0.1em] text-[11px] rounded-xl transition-all flex items-center justify-center gap-2"
+          className="w-full py-[10px] bg-[#DEB87A] hover:bg-[#D0A96B] text-black font-sans font-bold uppercase tracking-wider text-[15px] rounded-full transition-all flex items-center justify-center gap-2"
         >
           ADD TO CART
+          <ShoppingCart size={16} className="text-black fill-black" />
         </button>
       </div>
     </motion.div>

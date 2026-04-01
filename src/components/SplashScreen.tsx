@@ -50,7 +50,7 @@ const SplashScreen = ({ onComplete }: { onComplete: () => void }) => {
           className="text-center md:text-left"
         >
           <motion.h1 
-            className="font-serif text-4xl md:text-6xl text-primary tracking-[0.3em] uppercase font-light leading-none"
+            className="font-serif text-4xl md:text-6xl text-primary tracking-[0.3em] uppercase font-medium leading-none"
           >
             Kaleemiya
           </motion.h1>
@@ -58,7 +58,7 @@ const SplashScreen = ({ onComplete }: { onComplete: () => void }) => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 1, duration: 1 }}
-            className="text-[10px] md:text-sm tracking-[0.4em] uppercase text-white/40 font-sans mt-8 bg-clip-text text-transparent bg-gradient-to-r from-white/20 via-white/50 to-white/20"
+            className="text-[14px] md:text-sm tracking-[0.4em] uppercase text-white/40 font-sans mt-8 bg-clip-text text-transparent bg-gradient-to-r from-white/20 via-white/50 to-white/20"
           >
             Since 2010 • Pure Arabic Feel
           </motion.p>

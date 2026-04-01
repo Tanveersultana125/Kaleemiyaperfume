@@ -13,10 +13,10 @@ const BrandStory = () => {
           viewport={{ once: true, amount: 0.3 }}
           transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
         >
-          <span className="text-primary/60 text-xs font-sans tracking-[0.4em] uppercase mb-4 block">
+          <span className="text-primary/60 text-sm font-sans tracking-[0.4em] uppercase mb-4 block">
             Our Heritage
           </span>
-          <h2 className="text-3xl md:text-5xl font-serif font-light leading-tight mb-8">
+          <h2 className="text-3xl md:text-5xl font-serif font-medium leading-tight mb-8">
             A Journey Rooted in
             <br />
             <span className="gold-gradient-text font-medium">Tradition & Purity</span>
@@ -36,7 +36,7 @@ const BrandStory = () => {
             </p>
           </div>
           <div className="mt-10">
-            <Button variant="gold-outline" size="lg" className="px-8 text-xs tracking-[0.2em] uppercase rounded-sm">
+            <Button variant="gold-outline" size="lg" className="px-8 text-sm tracking-[0.2em] uppercase rounded-sm">
               Read Our Story
             </Button>
           </div>

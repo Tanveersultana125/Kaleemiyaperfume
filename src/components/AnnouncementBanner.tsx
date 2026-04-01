@@ -54,14 +54,14 @@ const AnnouncementBanner = () => {
         <div className="max-w-[1440px] mx-auto flex items-center justify-center gap-6">
           <div className="flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-[#B0843D] animate-pulse" />
-            <span className="text-[10px] md:text-[11px] font-black uppercase tracking-[0.25em] whitespace-nowrap">
+            <span className="text-[14px] md:text-[15px] font-black uppercase tracking-[0.25em] whitespace-nowrap">
               {latestAnnouncement.title}
             </span>
           </div>
           
           <div className="hidden md:block w-px h-3 bg-white/10" />
           
-          <p className="hidden md:block text-[10px] font-medium tracking-wider opacity-60 truncate max-w-xl italic">
+          <p className="hidden md:block text-[14px] font-medium tracking-wider opacity-60 truncate max-w-xl italic">
             {latestAnnouncement.content}
           </p>
 

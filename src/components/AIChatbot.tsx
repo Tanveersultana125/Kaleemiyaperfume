@@ -118,10 +118,10 @@ const AIChatbot = () => {
                   <Bot className="w-4 h-4 text-white" />
                 </div>
                 <div>
-                  <h3 className="font-serif text-white font-bold text-xs">Kaleemiya AI</h3>
+                  <h3 className="font-serif text-white font-bold text-sm">Kaleemiya AI</h3>
                   <div className="flex items-center gap-1">
                     <span className="w-1.5 h-1.5 rounded-full bg-green-400"></span>
-                    <span className="text-[9px] text-white/80 uppercase tracking-wider">Online</span>
+                    <span className="text-[11px] text-white/80 uppercase tracking-wider">Online</span>
                   </div>
                 </div>
               </div>
@@ -174,7 +174,7 @@ const AIChatbot = () => {
                   onChange={(e) => setInput(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && handleSend()}
                   placeholder="Ask a question..."
-                  className="w-full bg-muted/20 border border-gray-100 rounded-lg py-2 pl-3 pr-10 text-xs text-zinc-900 focus:outline-none focus:border-primary/40 focus:bg-white transition-all shadow-inner"
+                  className="w-full bg-muted/20 border border-gray-100 rounded-lg py-2 pl-3 pr-10 text-sm text-zinc-900 focus:outline-none focus:border-primary/40 focus:bg-white transition-all shadow-inner"
                 />
                 <button 
                   onClick={handleSend}
@@ -198,11 +198,11 @@ const AIChatbot = () => {
         {!isOpen && (
           <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-4 w-4 bg-primary text-[9px] items-center justify-center font-bold border border-white/40 shadow-sm">1</span>
+            <span className="relative inline-flex rounded-full h-4 w-4 bg-primary text-[11px] items-center justify-center font-bold border border-white/40 shadow-sm">1</span>
           </span>
         )}
         <div className="absolute right-full mr-3 bg-background border border-border py-1.5 px-3 rounded-lg shadow-xl whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none hidden md:block">
-          <p className="text-[10px] uppercase font-sans tracking-widest font-bold text-foreground flex items-center gap-2">
+          <p className="text-[14px] uppercase font-sans tracking-widest font-bold text-foreground flex items-center gap-2">
             <Sparkles className="w-3 h-3 text-primary" />
             Concierge
           </p>

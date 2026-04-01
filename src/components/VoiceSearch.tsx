@@ -196,7 +196,7 @@ const VoiceSearch = () => {
                   {!isListening && !isProcessing && (
                     <button 
                       onClick={startListening}
-                      className="gold-gradient-bg text-primary-foreground px-8 py-3 rounded-full font-bold uppercase tracking-wider text-xs flex items-center gap-3 hover:scale-105 transition-transform"
+                      className="gold-gradient-bg text-primary-foreground px-8 py-3 rounded-full font-bold uppercase tracking-wider text-sm flex items-center gap-3 hover:scale-105 transition-transform"
                     >
                       <Mic className="w-4 h-4" /> Start Speaking
                     </button>
@@ -204,7 +204,7 @@ const VoiceSearch = () => {
                   {isListening && (
                     <button 
                       onClick={stopListening}
-                      className="bg-red-500 text-white px-8 py-3 rounded-full font-bold uppercase tracking-wider text-xs flex items-center gap-3 hover:bg-red-600 transition-colors"
+                      className="bg-red-500 text-white px-8 py-3 rounded-full font-bold uppercase tracking-wider text-sm flex items-center gap-3 hover:bg-red-600 transition-colors"
                     >
                       <X className="w-4 h-4" /> Stop Recording
                     </button>
@@ -230,15 +230,15 @@ const VoiceSearch = () => {
                       >
                         <div className="aspect-square rounded-lg overflow-hidden mb-4 relative">
                           <img src={product.image} alt={product.name} className="w-full h-full object-cover transition-transform group-hover:scale-110" />
-                          <div className="absolute top-2 right-2 bg-primary/90 text-primary-foreground text-[10px] px-2 py-1 rounded-full font-bold flex items-center gap-1">
+                          <div className="absolute top-2 right-2 bg-primary/90 text-primary-foreground text-[14px] px-2 py-1 rounded-full font-bold flex items-center gap-1">
                             <Sparkles className="w-3 h-3" /> Result
                           </div>
                         </div>
                         <h3 className="font-serif text-sm mb-1">{product.name}</h3>
-                        <p className="text-primary font-bold text-xs mb-2">{product.price}</p>
+                        <p className="text-primary font-bold text-sm mb-2">{product.price}</p>
                         <div className="flex flex-wrap gap-1">
-                          <span className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-sm uppercase">{product.category}</span>
-                          <span className="text-[10px] bg-muted text-muted-foreground px-2 py-0.5 rounded-sm uppercase tracking-tighter">Recommended</span>
+                          <span className="text-[14px] bg-primary/10 text-primary px-2 py-0.5 rounded-sm uppercase">{product.category}</span>
+                          <span className="text-[14px] bg-muted text-muted-foreground px-2 py-0.5 rounded-sm uppercase tracking-tighter">Recommended</span>
                         </div>
                       </motion.div>
                     ))}

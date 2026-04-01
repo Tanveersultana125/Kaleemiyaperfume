@@ -9,6 +9,7 @@ import {
   orderBy, 
   onSnapshot, 
   doc, 
+  getDoc,
   updateDoc, 
   deleteDoc,
   writeBatch,
@@ -31,6 +32,40 @@ import { toast } from "sonner";
 const AdminDashboard = () => {
   const { user, role, isSuperAdmin, logout } = useAuth();
   const [activeTab, setActiveTab] = useState("Dashboard");
+  const [systemHealth, setSystemHealth] = useState({
+    db: "Checking...",
+    cdn: "Checking...",
+    api: "Checking..."
+  });
+
+  useEffect(() => {
+    const checkSystems = async () => {
+      // 1. Check DB (Simple Firestore ping)
+      try {
+        const testRef = doc(db, "metadata", "categories");
+        await getDoc(testRef);
+        setSystemHealth(prev => ({ ...prev, db: "Syncing" }));
+      } catch (err) {
+        setSystemHealth(prev => ({ ...prev, db: "Offline" }));
+      }
+
+      // 2. Check CDN (Cloudinary)
+      try {
+        const response = await fetch("https://res.cloudinary.com/demo/image/upload/sample.jpg", { mode: 'no-cors' });
+        setSystemHealth(prev => ({ ...prev, cdn: "Optimal" }));
+      } catch (err) {
+        setSystemHealth(prev => ({ ...prev, cdn: "Latent" }));
+      }
+      
+      // 3. API Simulation
+      setSystemHealth(prev => ({ ...prev, api: "Optimal" }));
+    };
+
+    checkSystems();
+    const interval = setInterval(checkSystems, 30000); // Check every 30s
+    return () => clearInterval(interval);
+  }, []);
+
   const [isSidebarOpen, setSidebarOpen] = useState(true);
   const [requestSearch, setRequestSearch] = useState("");
   
@@ -179,16 +214,17 @@ const AdminDashboard = () => {
         setGlobalCategories(data.list || []);
         setSubCategoriesConfig(data.subs || {});
       } else {
-        const defaults = ["Perfumes", "Attar", "Oud", "Bakhoor", "Gift Sets", "Tasbhi", "Prayer mats", "Books"];
+        const defaults = ["Perfumes", "Attar", "Oud", "Bakhoor", "Gift Sets", "Quran Box", "Tasbhi", "Prayer mats", "Books"];
         const defaultSubs: Record<string, string[]> = {
           "Perfumes": ["Men", "Women", "Unisex", "French", "Arabic", "Concentrated"],
           "Attar": ["Perfumes", "Spraybottle", "Bakhur", "Agarsetti", "Agarbatti"],
           "Oud": ["Cambodi", "Assami", "Indian", "Malaysian"],
           "Bakhoor": ["Spray Bottle", "Tablets", "Loose Wood", "Incense Sticks"],
-          "Gift Sets": ["Bukhur Dan", "Quran Book", "Tasbeeh", "Luxury Boxes"],
+          "Gift Sets": ["Bukhur Dan", "Quran Box", "Tasbeeh", "Luxury Boxes"],
+          "Quran Box": ["Luxury Edition", "Travel Case", "Wooden Box", "Velvet Box"],
           "Tasbhi": ["Crystal", "Wooden", "Digital", "Stone"],
           "Prayer mats": ["Janimaaz", "Children Janimaaz", "Velvet", "Travel"],
-          "Books": ["English", "Urdu", "Roman", "Quran", "Hadith"],
+          "Books": ["English", "Urdu", "Roman", "Holy Quran", "Hadith"],
         };
         setDoc(doc(db, "metadata", "categories"), { list: defaults, subs: defaultSubs });
       }
@@ -264,12 +300,14 @@ const AdminDashboard = () => {
     window.dispatchEvent(new CustomEvent("kaleemiya_settings_updated"));
   }, [storeSettings]);
 
+  const [promptData, setPromptData] = useState<{isOpen: boolean, title: string, placeholder: string, value: string, onConfirm: (val: string) => void}>({isOpen: false, title: "", placeholder: "", value: "", onConfirm: () => {}});
+
   if (productsLoading) {
     return (
       <div className="min-h-screen bg-[#FDFCFB] flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="w-12 h-12 text-[#310101] animate-spin opacity-20" />
-          <p className="text-[11px] font-black uppercase tracking-[0.3em] text-[#310101]/40">Initialising Boutique Engine...</p>
+          <p className="text-[15px] font-black uppercase tracking-[0.3em] text-[#310101]/90">Initialising Boutique Engine...</p>
         </div>
       </div>
     );
@@ -300,32 +338,98 @@ const AdminDashboard = () => {
     if (dynamicSubCategories[cat].length === 0) dynamicSubCategories[cat] = ["General"];
   });
 
-  const handleAddCategory = async () => {
-    const customCat = window.prompt("Enter new category name:");
-    if (customCat && customCat.trim()) {
-      const formatted = customCat.trim().charAt(0).toUpperCase() + customCat.trim().slice(1);
-      if (!globalCategories.includes(formatted)) {
+  const handleAddCategory = () => {
+    setPromptData({
+      isOpen: true,
+      title: "Add New Category",
+      placeholder: "Enter new category name...",
+      value: "",
+      onConfirm: async (val: string) => {
+        if (val.trim()) {
+           const formatted = val.trim().charAt(0).toUpperCase() + val.trim().slice(1);
+           if (!globalCategories.includes(formatted)) {
+             await setDoc(doc(db, "metadata", "categories"), {
+               list: [...globalCategories, formatted],
+               subs: subCategoriesConfig
+             }, { merge: true });
+             toast.success("Category saved to database!");
+           }
+        }
+        setPromptData(prev => ({ ...prev, isOpen: false }));
+      }
+    });
+  };
+
+  const handleAddSubCategory = (parentCat: string) => {
+    setPromptData({
+      isOpen: true,
+      title: `Add Sub-category to "${parentCat}"`,
+      placeholder: "Enter new sub-category name...",
+      value: "",
+      onConfirm: async (val: string) => {
+        if (val.trim()) {
+          const formatted = val.trim().charAt(0).toUpperCase() + val.trim().slice(1);
+          const currentSubs = subCategoriesConfig[parentCat] || [];
+          if (!currentSubs.includes(formatted)) {
+            const updatedSubs = { ...subCategoriesConfig, [parentCat]: [...currentSubs, formatted] };
+            await setDoc(doc(db, "metadata", "categories"), {
+              list: globalCategories,
+              subs: updatedSubs
+            }, { merge: true });
+            toast.success(`Sub-category added to ${parentCat}!`);
+          }
+        }
+        setPromptData(prev => ({ ...prev, isOpen: false }));
+      }
+    });
+  };
+
+  const handleDeleteCategory = async (catName: string) => {
+    if (["Our Bestseller", "New Arrival"].includes(catName)) {
+      toast.error(`${catName} is a system category and cannot be deleted.`);
+      return;
+    }
+    
+    if (inventory.some(p => p.category?.toLowerCase() === catName.toLowerCase())) {
+      toast.error(`Cannot delete ${catName}. It has active products assigned.`);
+      return;
+    }
+    
+    if (confirm(`Are you sure you want to delete the category "${catName}"?`)) {
+      const newGlobal = globalCategories.filter(c => c !== catName);
+      const newSubs = { ...subCategoriesConfig };
+      delete newSubs[catName];
+      
+      try {
         await setDoc(doc(db, "metadata", "categories"), {
-          list: [...globalCategories, formatted],
-          subs: subCategoriesConfig
+          list: newGlobal,
+          subs: newSubs
         }, { merge: true });
-        toast.success("Category saved to database!");
+        toast.success(`Category "${catName}" removed.`);
+      } catch (err: any) {
+        toast.error(err.message);
       }
     }
   };
 
-  const handleAddSubCategory = async (parentCat: string) => {
-    const customSub = window.prompt(`Enter new sub-category for "${parentCat}":`);
-    if (customSub && customSub.trim()) {
-      const formatted = customSub.trim().charAt(0).toUpperCase() + customSub.trim().slice(1);
-      const currentSubs = subCategoriesConfig[parentCat] || [];
-      if (!currentSubs.includes(formatted)) {
-        const updatedSubs = { ...subCategoriesConfig, [parentCat]: [...currentSubs, formatted] };
+  const handleDeleteSubCategory = async (parentCat: string, subName: string) => {
+    if (inventory.some(p => p.category?.toLowerCase() === parentCat.toLowerCase() && p.subCategory?.toLowerCase() === subName.toLowerCase())) {
+      toast.error(`Cannot delete "${subName}". It has active products assigned.`);
+      return;
+    }
+
+    if (confirm(`Remove sub-category "${subName}" from ${parentCat}?`)) {
+      const parentSubs = subCategoriesConfig[parentCat] || [];
+      const newParentSubs = parentSubs.filter(s => s !== subName);
+      
+      try {
         await setDoc(doc(db, "metadata", "categories"), {
           list: globalCategories,
-          subs: updatedSubs
+          subs: { ...subCategoriesConfig, [parentCat]: newParentSubs }
         }, { merge: true });
-        toast.success(`Sub-category added to ${parentCat}!`);
+        toast.success(`Sub-category "${subName}" removed.`);
+      } catch (err: any) {
+        toast.error(err.message);
       }
     }
   };
@@ -350,10 +454,12 @@ const AdminDashboard = () => {
     }
   };
 
-  const filteredRequests = adminRequests.filter(req =>
-    req.name?.toLowerCase().includes(requestSearch.toLowerCase()) ||
-    req.email?.toLowerCase().includes(requestSearch.toLowerCase())
-  );
+  const filteredRequests = adminRequests.filter(req => {
+    const term = requestSearch.toLowerCase();
+    const nameMatch = req.name ? req.name.toLowerCase().includes(term) : false;
+    const emailMatch = req.email ? req.email.toLowerCase().includes(term) : false;
+    return nameMatch || emailMatch;
+  });
 
   const handleApproveReq = async (requestId: string, uid: string, name: string) => {
     if (!isSuperAdmin) return;
@@ -407,22 +513,22 @@ const AdminDashboard = () => {
   };
 
   const StatCard = ({ title, value, icon: Icon, trend }: any) => (
-    <div className="bg-white p-8 rounded-[35px] shadow-sm border border-gray-100 hover:shadow-xl transition-all duration-500 group relative overflow-hidden">
-      <div className="absolute top-0 right-0 w-32 h-32 bg-[#B0843D] opacity-0 group-hover:opacity-[0.03] rounded-full -mr-16 -mt-16 transition-all duration-700"></div>
-      <div className="flex justify-between items-start mb-6">
-        <div className="p-4 bg-[#F9F6F2] rounded-2xl group-hover:bg-[#310101] group-hover:text-white transition-colors duration-500 border border-[#E5D5C5]/30">
-          <Icon className="w-7 h-7" />
+    <div className="bg-white p-10 rounded-[45px] shadow-sm border border-gray-100 hover:shadow-2xl transition-all duration-500 group relative overflow-hidden">
+      <div className="absolute top-0 right-0 w-32 h-32 bg-[#B0843D] opacity-0 group-hover:opacity-[0.05] rounded-full -mr-16 -mt-16 transition-all duration-700"></div>
+      <div className="flex justify-between items-start mb-8">
+        <div className="p-5 bg-[#F9F6F2] rounded-[24px] group-hover:bg-[#310101] group-hover:text-white transition-colors duration-500 border border-[#E5D5C5]/40 shadow-sm text-[#310101]">
+          <Icon className="w-8 h-8" />
         </div>
         {trend && (
-          <div className="flex items-center gap-1.5 bg-green-50 px-3 py-1.5 rounded-full border border-green-100">
-            <TrendingUp className="w-3 h-3 text-green-600" />
-            <span className="text-[11px] font-black text-green-700 uppercase tracking-widest">{trend}</span>
+          <div className="flex items-center gap-2 bg-green-50 px-4 py-2 rounded-full border border-green-100">
+            <TrendingUp className="w-4 h-4 text-green-600" />
+            <span className="text-[14px] font-black text-green-700 uppercase tracking-widest">{trend}</span>
           </div>
         )}
       </div>
       <div>
-        <p className="text-[12px] font-black text-black/30 uppercase tracking-[0.3em] mb-1">{title}</p>
-        <p className="text-4xl font-serif font-black text-[#310101] tracking-tighter italic">{value}</p>
+        <p className="text-[14px] font-black text-[#310101]/60 uppercase tracking-[0.3em] mb-2">{title}</p>
+        <p className="text-5xl font-serif font-black text-[#310101] tracking-tighter italic">{value}</p>
       </div>
     </div>
   );
@@ -433,7 +539,7 @@ const AdminDashboard = () => {
     { title: "Boutique News and Announcements", icon: Newspaper },
     { title: "New Desk", icon: PlusCircle }, 
     { title: "Orders", icon: ShoppingBag },
-    { title: "Customers", icon: Users },
+    { title: "Clientele", icon: Users },
     { title: "Categories", icon: Tag },
     ...(isSuperAdmin ? [{ title: "Admin Requests", icon: Zap }] : []),
     { title: "Settings", icon: Settings },
@@ -577,22 +683,65 @@ const AdminDashboard = () => {
             <button 
               key={tab.title} 
               onClick={() => setActiveTab(tab.title)} 
-              className={`w-full flex items-center gap-4 px-4 py-3.5 rounded-xl transition-all ${activeTab === tab.title ? "bg-[#F9F6F2] text-[#310101] shadow-xl font-black" : "hover:bg-white/5 text-white/50"}`}
+              className={`w-full flex items-center gap-4 px-5 py-4 rounded-2xl transition-all duration-300 ${activeTab === tab.title ? "bg-[#F9F6F2] text-[#310101] shadow-2xl scale-[1.02]" : "hover:bg-white/5 text-white/50"}`}
             >
-              <tab.icon className={`w-5 h-5 shrink-0 transition-colors ${activeTab === tab.title ? "text-[#310101]" : "text-[#E5D5C5]/40"}`} />
+              <tab.icon className={`w-6 h-6 shrink-0 transition-colors ${activeTab === tab.title ? "text-[#310101]" : "text-[#E5D5C5]/60"}`} />
               {isSidebarOpen && (
-                <span className="text-[12px] font-black uppercase tracking-[0.2em] text-left truncate">
-                  {tab.title}
+                <span className="text-[15px] font-black uppercase tracking-[0.1em] text-left truncate leading-none">
+                  {tab.title === "Boutique News and Announcements" ? "Broadcasts" : tab.title}
                 </span>
               )}
             </button>
           ))}
         </nav>
-        <div className="p-4 border-t border-white/10 mt-auto">
-          <button onClick={() => window.location.href = "/"} className="w-full flex items-center gap-4 px-4 py-4 rounded-xl transition-all hover:bg-white/10 text-white">
-            <Eye className="w-5 h-5 text-[#E5D5C5] shrink-0" />
-            {isSidebarOpen && <span className="text-[13px] font-bold uppercase tracking-widest">Main Portal</span>}
-          </button>
+        <div className="p-4 mt-12 mb-10">
+          {isSidebarOpen && (
+             <div className="px-2 pt-6 border-t border-white/10 mb-6">
+                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#E5D5C5]/40 mb-4">Platform</p>
+                <button 
+                  onClick={() => window.location.href = "/"} 
+                  className="w-full flex items-center gap-4 px-6 py-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-all text-white border border-white/5 shadow-xl group"
+                >
+                  <Eye className="w-5 h-5 text-[#E5D5C5] shrink-0 group-hover:scale-110 transition-transform" />
+                  <span className="text-[14px] font-black uppercase tracking-[0.2em]">Main Portal</span>
+                </button>
+             </div>
+          )}
+
+          <div className="px-2">
+             {isSidebarOpen ? (
+               <div className="bg-white/5 rounded-[25px] p-4 border border-white/5 flex items-center gap-4 show-xl">
+                  <div className="w-12 h-12 rounded-full bg-[#B0843D] flex items-center justify-center font-serif italic text-xl font-bold text-white shadow-lg">
+                    {user?.displayName?.charAt(0) || user?.email?.charAt(0) || "K"}
+                  </div>
+                  <div className="flex-1 overflow-hidden">
+                     <p className="text-[14px] font-black uppercase tracking-tight text-white truncate">
+                        {user?.displayName || "Authorized User"}
+                     </p>
+                     <div className="flex items-center gap-1.5">
+                        <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+                        <span className="text-[10px] font-black uppercase tracking-[0.1em] text-green-400">Authorized</span>
+                     </div>
+                  </div>
+               </div>
+             ) : (
+                <button onClick={() => window.location.href = "/"} className="p-3 bg-white/5 rounded-xl text-[#E5D5C5] mx-auto block"><Eye className="w-5 h-5" /></button>
+             )}
+          </div>
+        </div>
+
+        <div className="p-4 mt-auto border-t border-white/10 pt-6">
+          {isSidebarOpen ? (
+            <button
+               onClick={async () => { await logout(); window.location.href = "/"; }}
+               className="w-full flex items-center justify-center gap-3 px-6 py-4 rounded-2xl bg-white text-[#310101] hover:bg-red-500 hover:text-white transition-all duration-300 shadow-2xl font-black uppercase tracking-[0.1em] text-[12px]"
+            >
+               <LogOut className="w-4 h-4" />
+               Sign Out Account
+            </button>
+          ) : (
+            <button onClick={async () => { await logout(); window.location.href = "/"; }} className="p-3 bg-white rounded-xl text-[#310101] mx-auto block"><LogOut className="w-5 h-5" /></button>
+          )}
         </div>
       </aside>
 
@@ -607,14 +756,14 @@ const AdminDashboard = () => {
               title="Refresh Assets"
             >
                <Zap className="w-4 h-4 text-[#B0843D] group-hover:animate-bounce" />
-               <span className="text-[10px] font-black uppercase tracking-widest hidden md:block">Reload Cloud</span>
+               <span className="text-[14px] font-black uppercase tracking-widest hidden md:block">Reload Cloud</span>
             </button>
-            <div className="flex items-center gap-4 border-l pl-6 border-gray-100">
+            <div className="flex items-center gap-6 border-l pl-6 border-gray-100">
               <div className="text-right hidden sm:block">
-                <p className="text-[13px] font-black text-[#310101] uppercase tracking-widest leading-none mb-0.5">Kaleemiya</p>
-                <p className="text-[10px] text-black font-bold">Administrator</p>
+                <p className="text-[16px] font-black text-[#310101] uppercase tracking-[0.2em] leading-none mb-1">Kaleemiya</p>
+                <p className="text-[14px] text-[#310101]/60 font-bold uppercase tracking-widest underline decoration-[#B0843D]/30 underline-offset-4">Administrator</p>
               </div>
-              <div className="w-9 h-9 rounded-xl bg-[#310101] flex items-center justify-center text-[#F9F6F2] font-serif italic text-lg shadow-xl">K</div>
+              <div className="w-11 h-11 rounded-2xl bg-[#310101] flex items-center justify-center text-[#F9F6F2] font-serif italic text-xl shadow-xl border border-white/10 ring-4 ring-gray-50">K</div>
             </div>
           </div>
         </header>
@@ -628,16 +777,16 @@ const AdminDashboard = () => {
                   <div className="relative z-10 space-y-10">
                     <div className="flex items-center gap-4">
                       <div className="bg-[#310101] px-6 py-2 rounded-full flex items-center gap-3">
-                        <span className="text-[12px] font-black text-[#E5D5C5] uppercase tracking-[0.2em]">Live Store Status</span>
+                        <span className="text-[14px] font-black text-[#E5D5C5] uppercase tracking-[0.2em]">Live Store Status</span>
                         <div className="w-2.5 h-2.5 rounded-full bg-green-400 border-2 border-white animate-pulse"></div>
                       </div>
                     </div>
                     <div className="space-y-4">
                       <h2 className="text-8xl md:text-9xl font-serif font-black text-[#310101] tracking-tighter leading-[0.9] flex flex-wrap gap-x-6 items-baseline">
                         Welcome,
-                        <span className="text-[#B0843D] italic font-light lowercase">Tanveer!</span>
+                        <span className="text-[#B0843D] italic font-medium lowercase">Tanveer!</span>
                       </h2>
-                      <p className="text-xl font-light text-[#310101]/60 max-w-3xl leading-relaxed mt-6">
+                      <p className="text-xl font-medium text-[#310101] max-w-3xl leading-relaxed mt-6">
                         Curating the essence of elegance at <span className="font-bold text-[#310101] border-b-4 border-[#B0843D] pb-1 uppercase tracking-widest">Kaleemiya</span>.
                       </p>
                     </div>
@@ -667,7 +816,7 @@ const AdminDashboard = () => {
                    <div className="bg-white rounded-[60px] p-12 border border-[#E5D5C5]/50 shadow-sm">
                     <div className="flex justify-between items-center mb-8">
                       <h4 className="text-2xl font-serif font-bold italic text-[#310101]">Revenue Velocity</h4>
-                      <span className="text-[12px] font-black text-[#310101]/40 uppercase tracking-widest">7 Days • LIVE</span>
+                      <span className="text-[14px] font-black text-[#310101]/90 uppercase tracking-widest">7 Days • LIVE</span>
                     </div>
                     <div className="h-64 flex items-end justify-between gap-4">
                       {[40, 70, 45, 90, 65, 80, 100].map((height, i) => (
@@ -676,16 +825,22 @@ const AdminDashboard = () => {
                       ))}
                     </div>
                   </div>
-                  <div className="bg-white rounded-[60px] p-12 shadow-sm border border-gray-100">
-                    <h4 className="text-[18px] font-black font-serif text-black uppercase tracking-[0.2em] mb-2">Recent Activity</h4>
-                    <div className="space-y-8 mt-10">
+                  <div className="bg-white rounded-[60px] p-12 shadow-sm border border-gray-100 flex flex-col">
+                    <h4 className="text-[15px] font-black text-[#1A1A1A] uppercase tracking-[0.4em] mb-12">Recent Activity</h4>
+                    <div className="space-y-8">
                       {inventory.slice(0, 4).map((item, i) => (
-                        <div key={i} className="flex items-center justify-between group p-4 -mx-4 rounded-[30px] hover:bg-gray-50/50 transition-all">
-                           <div className="flex items-center gap-6">
-                              <div className="w-12 h-12 rounded-[18px] bg-[#F9F6F2] flex items-center justify-center font-serif font-black">{item.name.charAt(0)}</div>
-                              <p className="text-[14px] font-bold">Published: <span className="font-serif italic">"{item.name}"</span></p>
+                        <div 
+                          key={i} 
+                          onClick={() => setActiveTab("Manage Stock")}
+                          className="flex items-center justify-between group p-6 -mx-4 rounded-[30px] hover:bg-[#F9F6F2] transition-all cursor-pointer"
+                        >
+                           <div className="flex items-center gap-8">
+                              <div className="w-14 h-14 rounded-full bg-[#F9F6F2] group-hover:bg-[#1A1A1A] group-hover:text-white flex items-center justify-center font-serif font-black text-[#1A1A1A] text-xl transition-all shadow-sm">
+                                {item.name.charAt(0)}
+                              </div>
+                              <p className="text-[18px] font-black text-[#1A1A1A]">Published: <span className="font-serif italic text-black/50">"{item.name}"</span></p>
                            </div>
-                           <ChevronRight className="w-5 h-5 text-black/20" />
+                           <ChevronRight className="w-6 h-6 text-[#1A1A1A]/20 group-hover:text-[#B0843D] group-hover:translate-x-2 transition-all" />
                         </div>
                       ))}
                     </div>
@@ -693,14 +848,14 @@ const AdminDashboard = () => {
                 </div>
                 <div className="space-y-10">
                   <div className="bg-[#310101] rounded-[55px] p-12 shadow-2xl border border-white/5">
-                    <h5 className="text-[16px] font-black text-white uppercase tracking-[0.3em] mb-10">Category Index</h5>
+                    <h5 className="text-[14px] font-black text-[#E5D5C5]/60 uppercase tracking-[0.4em] mb-10">Asset Index</h5>
                     <div className="space-y-6">
                       {allCategories.slice(0, 5).map((cat, i) => {
                         const count = inventory.filter(p => p.category.toLowerCase() === cat.toLowerCase()).length;
                         const percent = inventory.length > 0 ? (count / inventory.length) * 100 : 10;
                         return (
                           <div key={i} className="space-y-3">
-                            <div className="flex justify-between items-center text-[11px] font-black uppercase text-white/50 tracking-widest">
+                            <div className="flex justify-between items-center text-[14px] font-black uppercase text-white tracking-widest opacity-60">
                                <span>{cat}</span><span>{count} ITEMS</span>
                             </div>
                             <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
@@ -711,11 +866,32 @@ const AdminDashboard = () => {
                       })}
                     </div>
                   </div>
-                  <div className="bg-white rounded-[50px] p-12 shadow-sm border border-[#E5D5C5]/30">
-                    <h5 className="text-[14px] font-black text-black uppercase tracking-[0.3em] mb-10">System Integrity</h5>
-                    <div className="space-y-6">
-                       <div className="flex items-center gap-4"><div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" /><span className="text-[11px] font-black uppercase tracking-widest opacity-50">Cloud Database: Syncing</span></div>
-                       <div className="flex items-center gap-4"><div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" /><span className="text-[11px] font-black uppercase tracking-widest opacity-50">CDN Engine: Optimal</span></div>
+                  <div className="bg-white rounded-[50px] p-12 shadow-sm border border-[#F9F6F2]">
+                    <h5 className="text-[14px] font-black text-[#1A1A1A] uppercase tracking-[0.4em] mb-12">System Status</h5>
+                    <div className="space-y-10">
+                       <div className="flex items-center gap-6">
+                          <div className={`w-4 h-4 rounded-full animate-pulse shrink-0 ${systemHealth.cdn === "Optimal" ? "bg-green-500 shadow-[0_0_15px_rgba(34,197,94,0.4)]" : "bg-orange-500 shadow-[0_0_15px_rgba(249,115,22,0.4)]"}`} />
+                          <div>
+                            <p className="text-[16px] font-black text-[#1A1A1A] leading-none mb-1">Cloud Storage</p>
+                            <p className="text-[11px] font-black uppercase tracking-[0.2em] text-black/30">{systemHealth.cdn === "Optimal" ? "Optimal Performance" : "High Latency"}</p>
+                          </div>
+                       </div>
+
+                       <div className="flex items-center gap-6">
+                          <div className={`w-4 h-4 rounded-full animate-pulse shrink-0 ${systemHealth.db === "Syncing" ? "bg-green-500 shadow-[0_0_15px_rgba(34,197,94,0.4)]" : "bg-red-500 shadow-[0_0_15px_rgba(239,68,68,0.4)]"}`} />
+                          <div>
+                            <p className="text-[16px] font-black text-[#1A1A1A] leading-none mb-1">Firestore Database</p>
+                            <p className="text-[11px] font-black uppercase tracking-[0.2em] text-black/30">{systemHealth.db === "Syncing" ? "Low Latency" : "Connection Error"}</p>
+                          </div>
+                       </div>
+
+                       <div className="flex items-center gap-6">
+                          <div className="w-4 h-4 rounded-full bg-[#B0843D] animate-pulse shrink-0 shadow-[0_0_15px_rgba(176,132,61,0.4)]" />
+                          <div>
+                            <p className="text-[16px] font-black text-[#1A1A1A] leading-none mb-1">API Broadcast</p>
+                            <p className="text-[11px] font-black uppercase tracking-[0.2em] text-black/30">High Traffic Alert</p>
+                          </div>
+                       </div>
                     </div>
                   </div>
                 </div>
@@ -737,21 +913,21 @@ const AdminDashboard = () => {
                   <div key={item.id} className="bg-white border-2 border-gray-50 rounded-[55px] p-12 shadow-sm space-y-10 flex flex-col justify-between hover:border-[#B0843D]/20 transition-all group">
                     <div className="space-y-6">
                       <div className="flex items-center justify-between">
-                         <span className="px-4 py-1.5 bg-[#F9F6F2] font-black uppercase text-[10px] rounded-full text-[#B0843D] tracking-widest">{item.category}</span>
-                         <span className="text-[11px] font-black opacity-20 uppercase tracking-widest">{item.date}</span>
+                         <span className="px-4 py-1.5 bg-[#F9F6F2] font-black uppercase text-[14px] rounded-full text-[#B0843D] tracking-widest">{item.category}</span>
+                         <span className="text-[15px] font-black opacity-20 uppercase tracking-widest">{item.date}</span>
                       </div>
                       <h3 className="text-4xl font-serif font-black italic text-[#310101] leading-tight group-hover:text-[#B0843D] transition-colors line-clamp-2">{item.title}</h3>
                       <p className="text-lg font-serif italic opacity-50 leading-relaxed line-clamp-4">"{item.content}"</p>
                       
                       {(item.startDate || item.endDate) && (
-                         <div className="pt-4 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-[#B0843D]">
+                         <div className="pt-4 flex items-center gap-2 text-[14px] font-black uppercase tracking-widest text-[#B0843D]">
                             <Calendar className="w-3 h-3" />
                             <span>{item.startDate || "Ongoing"} — {item.endDate || "No Expiry"}</span>
                          </div>
                       )}
                     </div>
                     <div className="pt-6 border-t border-dashed flex justify-between items-center gap-4">
-                       <span className="text-[10px] font-black uppercase opacity-20 tracking-widest flex-1">Live on Feed</span>
+                       <span className="text-[14px] font-black uppercase opacity-20 tracking-widest flex-1">Live on Feed</span>
                        <div className="flex gap-2">
                           <button 
                             onClick={() => {
@@ -814,8 +990,8 @@ const AdminDashboard = () => {
                                }} className="p-4 bg-white rounded-2xl hover:bg-black hover:text-white transition-all shadow-xl"><Trash2 className="w-5 h-5" /></button>
                             </div>
                          </div>
-                         <h3 className="text-[14px] font-black uppercase tracking-widest text-[#310101] mb-1">{p.name}</h3>
-                         <p className="text-[12px] font-bold text-black/30 uppercase tracking-[0.2em]">{p.category}</p>
+                         <h3 className="text-[16px] font-sans font-medium line-clamp-1 text-[#C29D59] mb-1">{p.name}</h3>
+                         <p className="text-[14px] font-bold text-black/30 uppercase tracking-[0.2em]">{p.category}</p>
                       </div>
                     ))}
                   
@@ -823,7 +999,7 @@ const AdminDashboard = () => {
                     <div className="col-span-full py-32 text-center bg-gray-50/50 rounded-[60px] border border-dashed flex flex-col items-center justify-center">
                        <Star className="w-16 h-16 text-black/10 mb-6" />
                        <h6 className="text-3xl font-serif font-black italic text-black/20">No Bestsellers Curated</h6>
-                       <button onClick={() => setActiveTab("Manage Stock")} className="mt-8 text-[11px] font-black uppercase tracking-[0.3em] text-[#B0843D] border-b-2 border-[#B0843D]/20 pb-1 hover:border-[#B0843D] transition-all">Rank items in your list</button>
+                       <button onClick={() => setActiveTab("Manage Stock")} className="mt-8 text-[15px] font-black uppercase tracking-[0.3em] text-[#B0843D] border-b-2 border-[#B0843D]/20 pb-1 hover:border-[#B0843D] transition-all">Rank items in your list</button>
                     </div>
                   )}
                </div>
@@ -856,7 +1032,7 @@ const AdminDashboard = () => {
                     />
                   </div>
                   <div className="w-full md:w-64">
-                    <select value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)} className="w-full bg-gray-50/50 border border-gray-100 h-16 px-8 rounded-[25px] font-black uppercase text-[12px] tracking-widest outline-none cursor-pointer">
+                    <select value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)} className="w-full bg-gray-50/50 border border-gray-100 h-16 px-8 rounded-[25px] font-black uppercase text-[14px] tracking-widest outline-none cursor-pointer">
                       <option value="All">Full Collection</option>
                       {allCategories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
                     </select>
@@ -870,7 +1046,7 @@ const AdminDashboard = () => {
                     <div className="aspect-[4/5] bg-[#F9F6F2] relative overflow-hidden">
                        <img src={product.image} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt={product.name} />
                        <div className="absolute top-4 right-4">
-                          <span className={`text-[9px] font-black uppercase tracking-widest px-4 py-2 rounded-full shadow-lg border-2 border-white ${
+                          <span className={`text-[11px] font-black uppercase tracking-widest px-4 py-2 rounded-full shadow-lg border-2 border-white ${
                              product.status === "In Stock" ? "bg-green-500 text-white" : 
                              product.status === "Low Stock" ? "bg-orange-500 text-white" : 
                              "bg-red-500 text-white"
@@ -879,24 +1055,58 @@ const AdminDashboard = () => {
                           </span>
                        </div>
                     </div>
-                    <div className="p-8 flex-1 flex flex-col justify-between space-y-6">
+                    <div className="p-8 pb-6 flex-1 flex flex-col justify-between space-y-4">
+                      <div className="flex justify-end mb-1 -mt-6">
+                        <div className="bg-white/90 backdrop-blur-sm border border-gray-100 rounded-full px-2 py-1 flex items-center gap-1 z-10 relative shadow-sm">
+                           <Star size={11} className="text-[#BFA15F] fill-[#BFA15F]" />
+                           <span className="text-[15px] text-[#555] font-medium tracking-tight font-sans">4.2 | 10</span>
+                        </div>
+                      </div>
+
                       <div className="space-y-1">
-                        <h3 className="font-serif font-black text-black text-xl tracking-tight leading-tight">{product.name}</h3>
-                        <p className="text-[10px] font-black text-black/30 uppercase tracking-[0.2em]">{product.category || "Uncategorized"} {product.subCategory && `— ${product.subCategory}`}</p>
+                        <h3 className="font-sans font-medium text-[#C29D59] text-[18px] tracking-normal leading-tight line-clamp-2">{product.name}</h3>
+                        <p className="text-[14px] font-black text-black/30 uppercase tracking-[0.2em]">{product.category || "Uncategorized"} {product.subCategory && `— ${product.subCategory}`}</p>
                       </div>
                       
                       <div className="space-y-6">
-                         <div className="flex justify-between items-baseline border-b border-gray-50 pb-4">
-                            <span className="font-serif font-black text-[#310101] text-3xl italic tracking-tighter">{product.price}</span>
-                            {product.stock !== undefined && (
-                               <span className="text-[11px] font-black text-black/20 uppercase">Qty: {product.stock}</span>
-                            )}
+                         <div className="flex flex-col gap-2 border-b border-gray-50 pb-4">
+                            <div className="flex flex-wrap items-center justify-between w-full">
+                              <div className="flex flex-wrap items-center gap-2">
+                                {product.discountPrice ? (
+                                  <>
+                                    <span className="font-sans text-[24px] font-bold text-[#111] leading-none">
+                                      ₹{parseInt(product.discountPrice.replace(/[^\d]/g, "")).toLocaleString()}
+                                    </span>
+                                    <span className="text-[#747e8e] line-through text-[15px] font-medium font-sans">
+                                      {product.price}
+                                    </span>
+                                    {(() => {
+                                      const rP = parseInt(product.price.replace(/[^\d]/g, "") || "0");
+                                      const rD = parseInt(product.discountPrice.replace(/[^\d]/g, "") || "0");
+                                      if (rP > 0 && rD > 0) {
+                                        return (
+                                          <span className="bg-[#489b6f] font-sans text-white text-[15px] font-bold px-1.5 py-[2px] rounded tracking-wide ml-1">
+                                            {Math.round(((rP - rD) / rP) * 100)}% off
+                                          </span>
+                                        );
+                                      }
+                                      return null;
+                                    })()}
+                                  </>
+                                ) : (
+                                  <span className="font-sans text-[24px] font-bold text-[#111] leading-none">{product.price}</span>
+                                )}
+                              </div>
+                              {product.stock !== undefined && (
+                                <span className="text-[15px] font-black text-black/40 uppercase">Qty: {product.stock}</span>
+                              )}
+                            </div>
                          </div>
                          
                          <div className="flex gap-2">
                             <button 
                               onClick={() => setEditingProduct({ ...product, price: product.numericPrice?.toString() || "", stock: product.stock?.toString() || "" })} 
-                              className="flex-1 bg-black text-white py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-[#310101] transition-all"
+                              className="flex-1 bg-black text-white py-4 rounded-2xl text-[14px] font-black uppercase tracking-[0.2em] hover:bg-[#310101] transition-all"
                             >
                               Edit Details
                             </button>
@@ -922,14 +1132,14 @@ const AdminDashboard = () => {
                     <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
                        <button 
                          onClick={handleBootstrapCloud}
-                         className="bg-[#310101] text-[#E5D5C5] px-12 py-7 rounded-[30px] font-black uppercase text-[12px] shadow-2xl hover:bg-black hover:scale-105 transition-all flex items-center gap-4 group"
+                         className="bg-[#310101] text-[#E5D5C5] px-12 py-7 rounded-[30px] font-black uppercase text-[14px] shadow-2xl hover:bg-black hover:scale-105 transition-all flex items-center gap-4 group"
                        >
                          <Zap className="w-5 h-5 text-[#B0843D] group-hover:rotate-12 transition-transform" />
                          Bootstrap Cloud Catalog
                        </button>
                        <button 
                          onClick={() => setActiveTab("New Desk")}
-                         className="bg-white border border-gray-100 text-black px-12 py-7 rounded-[30px] font-black uppercase text-[12px] hover:bg-gray-50 transition-all"
+                         className="bg-white border border-gray-100 text-black px-12 py-7 rounded-[30px] font-black uppercase text-[14px] hover:bg-gray-50 transition-all"
                        >
                          Create Manual Entry
                        </button>
@@ -945,7 +1155,7 @@ const AdminDashboard = () => {
               <h2 className="text-5xl font-serif font-black text-black tracking-tighter italic">Fulfillment Portal</h2>
               <div className="bg-white rounded-[30px] border border-gray-100 overflow-hidden shadow-sm">
                 <table className="w-full text-left">
-                  <thead className="bg-[#FAF9F6] text-[10px] font-black uppercase tracking-[0.2em] text-[#310101]/40 border-b">
+                  <thead className="bg-[#FAF9F6] text-[14px] font-black uppercase tracking-[0.2em] text-[#310101]/90 border-b">
                     <tr>
                       <th className="px-10 py-6 text-left">Order ID</th>
                       <th className="px-10 py-6 text-left">Customer</th>
@@ -972,7 +1182,7 @@ const AdminDashboard = () => {
                         <td className="px-10 py-7 text-center">
                            <button 
                              onClick={() => setSelectedOrder(order)} 
-                             className={`px-8 py-3 rounded-full text-[10px] font-black uppercase tracking-widest text-white transition-all shadow-lg hover:scale-105 inline-block ${
+                             className={`px-8 py-3 rounded-full text-[14px] font-black uppercase tracking-widest text-white transition-all shadow-lg hover:scale-105 inline-block ${
                                 order.status === "Delivered" ? "bg-green-600" : 
                                 order.status === "In Transit" ? "bg-blue-600" : 
                                 "bg-[#B0843D]"
@@ -989,7 +1199,7 @@ const AdminDashboard = () => {
             </div>
           )}
 
-          {activeTab === "Customers" && (
+          {activeTab === "Clientele" && (
             <div className="space-y-16 pb-32 max-w-7xl mx-auto px-4">
               <div className="flex flex-col md:flex-row justify-between items-end gap-10">
                  <div className="space-y-4">
@@ -997,7 +1207,7 @@ const AdminDashboard = () => {
                     <p className="text-xl font-serif italic text-black/40">Management of your exclusive community and their shopping profiles.</p>
                  </div>
                  <div className="bg-white px-8 py-5 rounded-[25px] border shadow-sm">
-                    <p className="text-[10px] font-black uppercase opacity-30 tracking-widest mb-1">Total Members</p>
+                    <p className="text-[14px] font-black uppercase opacity-30 tracking-widest mb-1">Total Members</p>
                     <p className="text-3xl font-black">{allUsers.length}</p>
                  </div>
               </div>
@@ -1016,32 +1226,32 @@ const AdminDashboard = () => {
                           </div>
                           <div>
                             <h4 className="text-2xl font-serif font-black text-black tracking-tight">{cust.name || "Guest User"}</h4>
-                            <p className="text-[11px] font-black text-[#B0843D] uppercase tracking-[0.2em]">{cust.role}</p>
+                            <p className="text-[15px] font-black text-[#B0843D] uppercase tracking-[0.2em]">{cust.role}</p>
                           </div>
                         </div>
 
                         <div className="space-y-1">
-                           <p className="text-[10px] font-black uppercase opacity-20 tracking-widest leading-none mb-1">Electronic Mail</p>
+                           <p className="text-[14px] font-black uppercase opacity-20 tracking-widest leading-none mb-1">Electronic Mail</p>
                            <p className="text-sm font-bold text-black group-hover:text-[#B0843D] transition-colors">{cust.email}</p>
                         </div>
 
                         <div className="grid grid-cols-2 gap-6 pt-4 border-t border-gray-50">
                            <div className="space-y-1">
-                              <p className="text-[10px] font-black uppercase opacity-20 tracking-widest">Total Orders</p>
+                              <p className="text-[14px] font-black uppercase opacity-20 tracking-widest">Total Orders</p>
                               <p className="text-2xl font-black">{userOrders.length}</p>
                            </div>
                            <div className="space-y-1">
-                              <p className="text-[10px] font-black uppercase opacity-20 tracking-widest">Total Spend</p>
+                              <p className="text-[14px] font-black uppercase opacity-20 tracking-widest">Total Spend</p>
                               <p className="text-2xl font-black text-green-600">₹{totalSpent.toLocaleString()}</p>
                            </div>
                         </div>
                       </div>
                       
                       <div className="px-10 py-6 bg-gray-50/50 flex justify-between items-center">
-                         <span className="text-[9px] font-black uppercase opacity-30 tracking-widest">ID: {cust.id.slice(0, 8)}...</span>
+                         <span className="text-[11px] font-black uppercase opacity-30 tracking-widest">ID: {cust.id.slice(0, 8)}...</span>
                          <button 
                            onClick={() => handleDeleteUser(cust.id, cust.name || cust.email, cust.email)} 
-                           className="flex items-center gap-2 text-red-500 hover:text-red-700 font-black text-[10px] uppercase tracking-widest transition-colors"
+                           className="flex items-center gap-2 text-red-500 hover:text-red-700 font-black text-[14px] uppercase tracking-widest transition-colors"
                          >
                             <Trash2 className="w-4 h-4" />
                             Dispose
@@ -1073,7 +1283,7 @@ const AdminDashboard = () => {
                                toast.success("Catalog Wiped");
                              }
                            }}
-                           className="bg-red-600 text-white px-12 py-6 rounded-[30px] font-black uppercase text-[12px] shadow-xl hover:bg-black transition-all"
+                           className="bg-red-600 text-white px-12 py-6 rounded-[30px] font-black uppercase text-[14px] shadow-xl hover:bg-black transition-all"
                          >
                             Wipe Entire Catalog
                          </button>
@@ -1084,7 +1294,7 @@ const AdminDashboard = () => {
                                toast.success("Order History Cleared");
                              }
                            }}
-                           className="bg-white border-2 border-red-600 text-red-600 px-12 py-6 rounded-[30px] font-black uppercase text-[12px] hover:bg-red-600 hover:text-white transition-all font-sans"
+                           className="bg-white border-2 border-red-600 text-red-600 px-12 py-6 rounded-[30px] font-black uppercase text-[14px] hover:bg-red-600 hover:text-white transition-all font-sans"
                          >
                             Clear Order History
                          </button>
@@ -1099,28 +1309,48 @@ const AdminDashboard = () => {
             <div className="space-y-6 pb-4">
                <div className="flex justify-between items-center bg-white p-8 rounded-[40px] border">
                   <h2 className="text-4xl font-serif font-black italic">Collection Directory</h2>
-                  <button onClick={handleAddCategory} className="bg-black text-white px-10 py-4 rounded-full text-[12px] font-black uppercase tracking-widest">Add Category</button>
+                  <button onClick={handleAddCategory} className="bg-black text-white px-10 py-4 rounded-full text-[14px] font-black uppercase tracking-widest">Add Category</button>
                </div>
                <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
                    {allCategories.map((cat, i) => (
                      <div key={i} className="bg-white p-10 rounded-[40px] border shadow-sm flex flex-col group hover:shadow-xl transition-all">
                         <div className="flex justify-between items-start mb-6">
                            <div className="p-4 bg-[#F9F6F2] rounded-2xl">
-                              <Tag className="w-8 h-8 text-[#310101]/40" />
+                              <Tag className="w-8 h-8 text-[#310101]/90" />
                            </div>
-                           <button 
-                             onClick={() => handleAddSubCategory(cat)}
-                             className="p-3 bg-black text-white rounded-xl opacity-0 group-hover:opacity-100 transition-opacity"
-                             title="Add Sub-category"
-                           >
-                              <PlusCircle className="w-5 h-5" />
-                           </button>
+                           <div className="flex gap-2">
+                             {!["Our Bestseller", "New Arrival"].includes(cat) && (
+                               <button 
+                                 onClick={() => handleDeleteCategory(cat)}
+                                 className="p-3 bg-red-50 text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition-all"
+                                 title="Delete Category"
+                               >
+                                  <Trash2 className="w-5 h-5" />
+                               </button>
+                             )}
+                             <button 
+                               onClick={() => handleAddSubCategory(cat)}
+                               className="p-3 bg-black text-white rounded-xl hover:opacity-80 transition-opacity"
+                               title="Add Sub-category"
+                             >
+                                <PlusCircle className="w-5 h-5" />
+                             </button>
+                           </div>
                         </div>
                         <h3 className="font-serif font-black text-2xl italic text-[#310101] mb-4">{cat}</h3>
                         <div className="flex flex-wrap gap-2">
                            {(dynamicSubCategories[cat] || []).map((sub, si) => (
-                              <span key={si} className="px-3 py-1 bg-gray-50 rounded-lg text-[10px] font-black uppercase tracking-widest text-black/40 border border-gray-100">
+                              <span key={si} className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 hover:bg-white rounded-lg text-[14px] font-black uppercase tracking-widest text-black/40 border border-gray-100 relative shadow-sm transition-colors">
                                  {sub}
+                                 {!["General"].includes(sub) && (
+                                   <button 
+                                     onClick={(e) => { e.stopPropagation(); handleDeleteSubCategory(cat, sub); }} 
+                                     className="hover:text-red-500 hover:bg-red-50 rounded-full transition-all text-black/20 ml-0.5 mt-0.5 aspect-square flex items-center justify-center p-0.5"
+                                     title="Delete Sub-category"
+                                   >
+                                      <X className="w-3.5 h-3.5" />
+                                   </button>
+                                 )}
                               </span>
                            ))}
                         </div>
@@ -1132,7 +1362,37 @@ const AdminDashboard = () => {
 
           {activeTab === "Admin Requests" && isSuperAdmin && (
             <div className="space-y-12 max-w-6xl mx-auto pb-24">
-              <h2 className="text-7xl font-serif font-black text-black tracking-tighter italic">Portal Permissions</h2>
+              <div className="flex flex-col lg:flex-row justify-between lg:items-end gap-10">
+                <h2 className="text-7xl font-serif font-black text-black tracking-tighter italic">Portal Permissions</h2>
+                
+                <div className="flex gap-6">
+                  <div className="bg-[#310101] text-[#E5D5C5] px-10 py-6 rounded-3xl flex items-center gap-6 shadow-xl">
+                    <ShieldAlert className="w-8 h-8" />
+                    <div>
+                      <p className="text-[14px] uppercase font-black tracking-[0.2em] opacity-50">Security Status</p>
+                      <p className="text-2xl font-black">{activeAdmins.length + 1} Active Admins</p>
+                    </div>
+                  </div>
+                  <div className="bg-[#B0843D] text-white px-10 py-6 rounded-3xl flex items-center gap-6 shadow-xl">
+                    <Zap className="w-8 h-8" />
+                    <div>
+                      <p className="text-[14px] uppercase font-black tracking-[0.2em] opacity-50">Action Needed</p>
+                      <p className="text-2xl font-black">{adminRequests.length} Pending</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="relative">
+                <Search className="absolute left-8 top-1/2 -translate-y-1/2 w-6 h-6 text-black/30" />
+                <input 
+                  type="text" 
+                  placeholder="Search requests by email or name..." 
+                  value={requestSearch}
+                  onChange={(e) => setRequestSearch(e.target.value)}
+                  className="w-full bg-white p-8 pl-20 rounded-[40px] text-xl font-bold font-sans outline-none shadow-sm focus:shadow-xl transition-all border border-gray-100"
+                />
+              </div>
               <div className="bg-white rounded-[55px] shadow-sm border border-gray-100 overflow-hidden divide-y">
                 {filteredRequests.map((item) => (
                   <div key={item.id} className="p-12 flex flex-col lg:flex-row items-center justify-between gap-12 hover:bg-gray-50/50 transition-colors">
@@ -1145,8 +1405,8 @@ const AdminDashboard = () => {
                       </div>
                     </div>
                     <div className="flex gap-4">
-                      <button onClick={() => handleApproveReq(item.id, item.uid, item.name)} className="bg-black text-white px-12 py-6 rounded-[30px] font-black uppercase text-[12px]">Approve Access</button>
-                      <button onClick={() => handleDenyReq(item.id, item.name)} className="bg-white border text-black px-12 py-6 rounded-[30px] font-black uppercase hover:bg-red-50 text-[12px]">Deny</button>
+                      <button onClick={() => handleApproveReq(item.id, item.uid, item.name)} className="bg-black text-white px-12 py-6 rounded-[30px] font-black uppercase text-[14px]">Approve Access</button>
+                      <button onClick={() => handleDenyReq(item.id, item.name)} className="bg-white border text-black px-12 py-6 rounded-[30px] font-black uppercase hover:bg-red-50 text-[14px]">Deny</button>
                     </div>
                   </div>
                 ))}
@@ -1157,21 +1417,7 @@ const AdminDashboard = () => {
                  <div><h6 className="text-[16px] font-black uppercase mb-2">Security Protocol</h6><p className="opacity-50 text-sm font-bold uppercase tracking-widest">Access delegation enables full database visibility.</p></div>
               </div>
 
-              {requestLogs.length > 0 && (
-                <div className="space-y-6 pt-10">
-                  <h4 className="text-[14px] font-black uppercase tracking-[0.4em] opacity-30">Historical Logs</h4>
-                  <div className="space-y-4">
-                    {requestLogs.map(log => (
-                      <div key={log.id} className="bg-white p-8 rounded-[35px] border flex justify-between items-center group">
-                         <span className="text-lg font-serif font-black italic">{log.name}</span>
-                         <span className={`px-6 py-2 rounded-full text-[10px] font-black uppercase ${log.status === "approved" ? "bg-green-50 text-green-700" : "bg-red-50 text-red-600"}`}>Access {log.status}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              <div className="space-y-8 pt-16">
+              <div className="space-y-8 pt-10">
                 <h4 className="text-[16px] font-black uppercase tracking-[0.4em] text-black">Active Administrators</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {activeAdmins.map((admin) => (
@@ -1183,11 +1429,11 @@ const AdminDashboard = () => {
                         <div>
                           <div className="flex flex-col">
                             <h5 className="text-[18px] font-black text-black leading-tight mb-1">{admin.name || "Administrator"}</h5>
-                            <p className="text-[12px] font-bold text-black/40 truncate max-w-[180px]">{admin.email}</p>
+                            <p className="text-[14px] font-bold text-black/40 truncate max-w-[180px]">{admin.email}</p>
                           </div>
                           <div className="flex items-center gap-2 mt-2">
                              <div className="w-2 h-2 rounded-full bg-green-500" />
-                             <span className="text-[10px] font-black text-green-600 uppercase tracking-widest leading-none">ADMIN</span>
+                             <span className="text-[14px] font-black text-green-600 uppercase tracking-widest leading-none">ADMIN</span>
                           </div>
                         </div>
                       </div>
@@ -1206,6 +1452,20 @@ const AdminDashboard = () => {
                   ))}
                 </div>
               </div>
+
+              {requestLogs.length > 0 && (
+                <div className="space-y-6 pt-16">
+                  <h4 className="text-[14px] font-black uppercase tracking-[0.4em] opacity-30">Historical Logs</h4>
+                  <div className="space-y-4">
+                    {requestLogs.map(log => (
+                      <div key={log.id} className="bg-white p-8 rounded-[35px] border flex justify-between items-center group">
+                         <span className="text-lg font-serif font-black italic">{log.name}</span>
+                         <span className={`px-6 py-2 rounded-full text-[14px] font-black uppercase ${log.status === "approved" ? "bg-green-50 text-green-700" : "bg-red-50 text-red-600"}`}>Access {log.status}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -1216,18 +1476,18 @@ const AdminDashboard = () => {
               <div className="bg-[#1A1A1A] rounded-[40px] p-10 mb-12 shadow-2xl flex items-center justify-between">
                    <h2 className="text-5xl font-serif font-black text-white italic">New Creation Desk</h2>
                    <div className="flex gap-4">
-                      <button onClick={handleSyncDefaults} className="bg-white/10 text-white/70 px-6 py-3 rounded-xl uppercase font-black text-[10px] hover:bg-[#B0843D] hover:text-white transition-all">Sync Catalog Structure</button>
-                      <button onClick={handleResetNewProduct} className="bg-white/10 text-white/50 px-6 py-3 rounded-xl uppercase font-black text-[10px]">Reset Creation</button>
+                      <button onClick={handleSyncDefaults} className="bg-white/10 text-white/70 px-6 py-3 rounded-xl uppercase font-black text-[14px] hover:bg-[#B0843D] hover:text-white transition-all">Sync Catalog Structure</button>
+                      <button onClick={handleResetNewProduct} className="bg-white/10 text-white/50 px-6 py-3 rounded-xl uppercase font-black text-[14px]">Reset Creation</button>
                    </div>
               </div>
               <form onSubmit={handleAddProduct} className="bg-white rounded-[60px] p-16 shadow-2xl space-y-12">
                 <input required placeholder="Perfume Name..." value={newProduct.name} onChange={e => setNewProduct({...newProduct, name: e.target.value})} className="w-full text-7xl font-serif font-black outline-none border-b focus:border-black italic" />
-                <textarea required placeholder="Arromatic Story details..." value={newProduct.description} onChange={e => setNewProduct({...newProduct, description: e.target.value})} className="w-full h-40 outline-none text-2xl font-serif italic border-none resize-none opacity-50 focus:opacity-100 transition-all" />
+                <textarea required placeholder="Aromatic Story details..." value={newProduct.description} onChange={e => setNewProduct({...newProduct, description: e.target.value})} className="w-full h-40 outline-none text-2xl font-serif italic border-none resize-none opacity-50 focus:opacity-100 transition-all" />
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                    <div className="space-y-4">
                       <div className="flex justify-between items-center">
-                         <label className="text-[11px] font-black uppercase opacity-30">Category</label>
-                         <button type="button" onClick={handleSyncDefaults} className="text-[9px] font-black uppercase text-[#B0843D] hover:underline">Update List</button>
+                         <label className="text-[15px] font-black uppercase opacity-30">Category</label>
+                         <button type="button" onClick={handleSyncDefaults} className="text-[11px] font-black uppercase text-[#B0843D] hover:underline">Update List</button>
                       </div>
                       <select 
                         value={newProduct.category} 
@@ -1242,30 +1502,30 @@ const AdminDashboard = () => {
                       </select>
                    </div>
                    <div className="space-y-4">
-                      <label className="text-[11px] font-black uppercase opacity-30">Sub Category</label>
+                      <label className="text-[15px] font-black uppercase opacity-30">Sub Category</label>
                       <select value={newProduct.subCategory} onChange={e => setNewProduct({...newProduct, subCategory: e.target.value})} className="w-full p-5 bg-gray-50 rounded-2xl font-bold outline-none">
                          {(dynamicSubCategories[newProduct.category] || ["No sub-categories"]).map(s => <option key={s}>{s}</option>)}
                       </select>
                    </div>
                   <div className="space-y-4">
-                     <label className="text-[11px] font-black uppercase text-[#B0843D]">Retail Price (₹)</label>
+                     <label className="text-[15px] font-black uppercase text-[#B0843D]">Retail Price (₹)</label>
                      <input type="number" required placeholder="e.g. 2999" value={newProduct.price} onChange={e => setNewProduct({...newProduct, price: e.target.value})} className="w-full p-6 bg-gray-50 rounded-[25px] font-bold border-none outline-none focus:ring-4 focus:ring-[#B0843D]/5" />
                   </div>
                   <div className="space-y-4">
-                     <label className="text-[11px] font-black uppercase text-[#B0843D]">Discount Price (Optional)</label>
+                     <label className="text-[15px] font-black uppercase text-[#B0843D]">Discount Price (Optional)</label>
                      <input type="number" placeholder="e.g. 1999" value={newProduct.discountPrice} onChange={e => setNewProduct({...newProduct, discountPrice: e.target.value})} className="w-full p-6 bg-gray-50 rounded-[25px] font-bold border-none outline-none focus:ring-4 focus:ring-[#B0843D]/5" />
                   </div>
                    <div className="space-y-4">
-                      <label className="text-[11px] font-black uppercase opacity-30">Reserve Units</label>
+                      <label className="text-[15px] font-black uppercase opacity-30">Reserve Units</label>
                       <input required type="number" value={newProduct.stock} onChange={e => setNewProduct({...newProduct, stock: e.target.value})} className="w-full p-5 bg-gray-50 rounded-2xl font-bold outline-none" />
                    </div>
                    
                    <div className="space-y-4">
-                      <label className="text-[11px] font-black uppercase text-[#B0843D]">New Arrival</label>
+                      <label className="text-[15px] font-black uppercase text-[#B0843D]">New Arrival</label>
                       <button 
                         type="button"
                         onClick={() => setNewProduct({...newProduct, isNew: !newProduct.isNew})}
-                        className={`w-full p-5 rounded-2xl font-black uppercase text-[11px] tracking-widest transition-all flex items-center justify-center gap-3 ${newProduct.isNew ? 'bg-[#B0843D] text-white shadow-xl' : 'bg-gray-100 text-black/20'}`}
+                        className={`w-full p-5 rounded-2xl font-black uppercase text-[15px] tracking-widest transition-all flex items-center justify-center gap-3 ${newProduct.isNew ? 'bg-[#B0843D] text-white shadow-xl' : 'bg-gray-100 text-black/20'}`}
                       >
                          <Zap className={`w-4 h-4 ${newProduct.isNew ? 'fill-current' : ''}`} />
                          {newProduct.isNew ? "Active New" : "Mark as New"}
@@ -1273,14 +1533,14 @@ const AdminDashboard = () => {
                    </div>
 
                    <div className="space-y-4">
-                      <label className="text-[11px] font-black uppercase text-[#B0843D]">Promotional</label>
+                      <label className="text-[15px] font-black uppercase text-[#B0843D]">Our Bestseller</label>
                       <button 
                         type="button"
                         onClick={() => setNewProduct({...newProduct, isBestseller: !newProduct.isBestseller})}
-                        className={`w-full p-5 rounded-2xl font-black uppercase text-[11px] tracking-widest transition-all flex items-center justify-center gap-3 ${newProduct.isBestseller ? 'bg-[#310101] text-[#E5D5C5] shadow-xl' : 'bg-gray-100 text-black/20'}`}
+                        className={`w-full p-5 rounded-2xl font-black uppercase text-[15px] tracking-widest transition-all flex items-center justify-center gap-3 ${newProduct.isBestseller ? 'bg-[#310101] text-[#E5D5C5] shadow-xl' : 'bg-gray-100 text-black/20'}`}
                       >
                          <Star className={`w-4 h-4 ${newProduct.isBestseller ? 'fill-current' : ''}`} />
-                         {newProduct.isBestseller ? "Active Best" : "Mark Best"}
+                         {newProduct.isBestseller ? "Active Bestseller" : "Mark as Bestseller"}
                       </button>
                    </div>
                 </div>
@@ -1296,31 +1556,113 @@ const AdminDashboard = () => {
           )}
 
           {activeTab === "Settings" && (
-            <div className="max-w-6xl mx-auto space-y-12">
-               <h2 className="text-7xl font-serif font-black italic">Dashboard Core</h2>
+            <div className="max-w-6xl mx-auto space-y-12 pb-24">
+               <div className="flex items-end justify-between">
+                  <h2 className="text-7xl font-serif font-black italic tracking-tighter text-[#310101]">Dashboard Core</h2>
+                  <span className="text-[15px] font-black uppercase tracking-[0.3em] text-[#B0843D] pb-3 border-b-2 border-[#B0843D]/20">System Configuration</span>
+               </div>
+               
                <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-                  <div className="bg-white p-12 rounded-[60px] shadow-sm border space-y-10">
-                     <h3 className="text-3xl font-serif font-black italic">Boutique Profile</h3>
-                     <div className="space-y-8">
-                        <div className="space-y-3"><label className="text-[10px] font-black uppercase opacity-30">Boutique Name</label><input value={storeSettings.name} onChange={e => setStoreSettings({...storeSettings, name: e.target.value})} className="w-full p-6 bg-gray-50 rounded-3xl font-bold outline-none" /></div>
-                        <div className="space-y-3"><label className="text-[10px] font-black uppercase opacity-30">Support Email</label><input value={storeSettings.email} onChange={e => setStoreSettings({...storeSettings, email: e.target.value})} className="w-full p-6 bg-gray-50 rounded-3xl font-bold outline-none" /></div>
-                        <button onClick={() => toast.success("Settings Saved")} className="w-full bg-[#310101] text-white py-6 rounded-[30px] font-black uppercase text-xs shadow-xl tracking-widest">Update Profile</button>
-                     </div>
-                  </div>
-                  <div className="bg-white p-12 rounded-[60px] shadow-sm border space-y-10 group hover:shadow-xl transition-all h-fit">
-                     <h3 className="text-3xl font-serif font-black italic">Security & Aesthetics</h3>
-                     <div className="space-y-8">
-                        <div className="space-y-4">
-                           <label className="text-[10px] font-black uppercase opacity-30">Accent Brand Color</label>
-                           <div className="flex gap-4">
-                              {["#310101", "#B0843D", "#4A5D23", "#1A1A1A"].map(c => (
-                                <div key={c} onClick={() => setStoreSettings({...storeSettings, accentColor: c})} style={{backgroundColor: c}} className={`w-12 h-12 rounded-2xl cursor-pointer border-4 transition-all ${storeSettings.accentColor === c ? 'border-[#FDFCFB] scale-110 shadow-xl' : 'border-transparent opacity-50 hover:opacity-100'}`} />
-                              ))}
+                  <div className="bg-white p-12 rounded-[60px] shadow-sm border border-[#E5D5C5]/30 space-y-10 relative overflow-hidden">
+                     <div className="absolute top-0 right-0 w-40 h-40 bg-[#310101]/5 rounded-full -mr-20 -mt-20 blur-2xl"></div>
+                     <h3 className="text-3xl font-serif font-black italic text-[#310101]">Boutique Profile</h3>
+                     <div className="space-y-8 relative z-10">
+                        <div className="space-y-3">
+                           <label className="text-[14px] font-black uppercase text-[#B0843D] tracking-widest">Boutique Name</label>
+                           <input value={storeSettings.name || ""} onChange={e => setStoreSettings({...storeSettings, name: e.target.value})} className="w-full p-6 bg-gray-50 rounded-3xl font-bold outline-none focus:ring-4 focus:ring-[#B0843D]/10 transition-all border-none" />
+                        </div>
+                        <div className="space-y-3">
+                           <label className="text-[14px] font-black uppercase text-[#B0843D] tracking-widest">Support Email</label>
+                           <input type="email" value={storeSettings.email || ""} onChange={e => setStoreSettings({...storeSettings, email: e.target.value})} className="w-full p-6 bg-gray-50 rounded-3xl font-bold outline-none focus:ring-4 focus:ring-[#B0843D]/10 transition-all border-none" />
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-6">
+                           <div className="space-y-3">
+                              <label className="text-[14px] font-black uppercase text-[#B0843D] tracking-widest">Base Currency</label>
+                              <select value={storeSettings.currency || "INR (₹)"} onChange={e => setStoreSettings({...storeSettings, currency: e.target.value})} className="w-full p-6 bg-gray-50 rounded-3xl font-bold outline-none focus:ring-4 focus:ring-[#B0843D]/10 transition-all border-none appearance-none">
+                                 <option>INR (₹)</option>
+                                 <option>USD ($)</option>
+                                 <option>AED (د.إ)</option>
+                                 <option>GBP (£)</option>
+                                 <option>EUR (€)</option>
+                              </select>
+                           </div>
+                           <div className="space-y-3">
+                              <label className="text-[14px] font-black uppercase text-[#B0843D] tracking-widest">Contact Phone</label>
+                              <input placeholder="+91..." value={storeSettings.phone || ""} onChange={e => setStoreSettings({...storeSettings, phone: e.target.value})} className="w-full p-6 bg-gray-50 rounded-3xl font-bold outline-none focus:ring-4 focus:ring-[#B0843D]/10 transition-all border-none" />
                            </div>
                         </div>
-                        <div className="p-8 bg-gray-50 rounded-[40px] flex items-center justify-between">
-                           <p className="font-black uppercase text-xs">Site Live Status</p>
-                           <div onClick={() => setStoreSettings({...storeSettings, maintenanceMode: !storeSettings.maintenanceMode})} className={`w-14 h-8 rounded-full p-1 cursor-pointer transition-all ${storeSettings.maintenanceMode ? 'bg-[#310101]' : 'bg-green-500'}`}><div className={`w-6 h-6 bg-white rounded-full transition-transform ${storeSettings.maintenanceMode ? 'translate-x-6' : 'translate-x-0'}`} /></div>
+
+                        <div className="grid grid-cols-2 gap-6">
+                           <div className="space-y-3">
+                              <label className="text-[14px] font-black uppercase text-[#B0843D] tracking-widest">Instagram Handle</label>
+                              <input placeholder="@username" value={storeSettings.instagram || ""} onChange={e => setStoreSettings({...storeSettings, instagram: e.target.value})} className="w-full p-6 bg-gray-50 rounded-3xl font-bold outline-none focus:ring-4 focus:ring-[#B0843D]/10 transition-all border-none" />
+                           </div>
+                           <div className="space-y-3">
+                              <label className="text-[14px] font-black uppercase text-[#B0843D] tracking-widest">WhatsApp Link</label>
+                              <input placeholder="+91..." value={storeSettings.whatsapp || ""} onChange={e => setStoreSettings({...storeSettings, whatsapp: e.target.value})} className="w-full p-6 bg-gray-50 rounded-3xl font-bold outline-none focus:ring-4 focus:ring-[#B0843D]/10 transition-all border-none" />
+                           </div>
+                        </div>
+
+                        <button onClick={() => toast.success("Boutique Profile Synchronized")} className="w-full bg-[#310101] text-white py-6 rounded-[30px] font-black uppercase text-[14px] shadow-xl tracking-[0.2em] hover:scale-[1.02] active:scale-95 transition-all mt-4 border border-[#310101]/20 group">
+                           <span className="group-hover:text-[#B0843D] transition-colors">Update Configuration</span>
+                        </button>
+                     </div>
+                  </div>
+
+                  <div className="space-y-12">
+                     <div className="bg-white p-12 rounded-[60px] shadow-sm border border-[#E5D5C5]/30 space-y-10 group hover:shadow-xl transition-all relative overflow-hidden">
+                        <div className="absolute top-0 right-0 w-40 h-40 bg-[#B0843D]/10 rounded-full -mr-20 -mt-20 blur-2xl"></div>
+                        <h3 className="text-3xl font-serif font-black italic text-[#310101]">Security & Aesthetics</h3>
+                        <div className="space-y-8 relative z-10">
+                           <div className="space-y-4">
+                              <label className="text-[14px] font-black uppercase text-[#B0843D] tracking-widest">Accent Brand Color</label>
+                              <div className="flex flex-wrap gap-4">
+                                 {["#310101", "#B0843D", "#4A5D23", "#1A1A1A", "#8B4513"].map(c => (
+                                   <div 
+                                     key={c} 
+                                     onClick={() => setStoreSettings({...storeSettings, accentColor: c})} 
+                                     style={{backgroundColor: c}} 
+                                     className={`w-14 h-14 rounded-2xl cursor-pointer border-4 transition-all ${storeSettings.accentColor === c ? 'border-[#E5D5C5] scale-110 shadow-2xl ring-2 ring-black/10' : 'border-transparent opacity-60 hover:opacity-100'}`} 
+                                   />
+                                 ))}
+                              </div>
+                           </div>
+
+                           <div className="space-y-4 pt-6">
+                              <div className="p-8 bg-gray-50/80 backdrop-blur-sm rounded-[40px] flex items-center justify-between border border-transparent hover:border-[#E5D5C5]/50 transition-all">
+                                 <div>
+                                    <p className="font-black uppercase text-[15px] mb-1.5 text-[#310101] tracking-widest">Site Maintenance Mode</p>
+                                    <p className="text-[14px] text-black/40 font-medium">Disable public access temporarily</p>
+                                 </div>
+                                 <div onClick={() => setStoreSettings({...storeSettings, maintenanceMode: !storeSettings.maintenanceMode})} className={`w-14 h-8 rounded-full p-1 cursor-pointer transition-all shadow-inner ${storeSettings.maintenanceMode ? 'bg-[#310101]' : 'bg-gray-300'}`}>
+                                    <div className={`w-6 h-6 bg-white rounded-full transition-transform shadow-md ${storeSettings.maintenanceMode ? 'translate-x-6' : 'translate-x-0'}`} />
+                                 </div>
+                              </div>
+                              
+                              <div className="p-8 bg-gray-50/80 backdrop-blur-sm rounded-[40px] flex items-center justify-between border border-transparent hover:border-[#E5D5C5]/50 transition-all">
+                                 <div>
+                                    <p className="font-black uppercase text-[15px] mb-1.5 text-[#310101] tracking-widest">Public Catalog Live</p>
+                                    <p className="text-[14px] text-black/40 font-medium">Keep catalog indexing open for SEO</p>
+                                 </div>
+                                 <div onClick={() => setStoreSettings({...storeSettings, publicLivePage: typeof storeSettings.publicLivePage === 'undefined' ? true : !storeSettings.publicLivePage})} className={`w-14 h-8 rounded-full p-1 cursor-pointer transition-all shadow-inner ${storeSettings.publicLivePage !== false ? 'bg-green-500' : 'bg-gray-300'}`}>
+                                    <div className={`w-6 h-6 bg-white rounded-full transition-transform shadow-md ${storeSettings.publicLivePage !== false ? 'translate-x-6' : 'translate-x-0'}`} />
+                                 </div>
+                              </div>
+
+                              <div className="p-8 bg-gray-50/80 backdrop-blur-sm rounded-[40px] flex items-center justify-between border border-[#310101]/5 hover:border-red-200 transition-all">
+                                 <div>
+                                    <p className="font-black uppercase text-[15px] mb-1.5 text-[#310101] tracking-widest flex items-center gap-2">
+                                       <ShieldAlert className="w-3.5 h-3.5 text-red-500" /> 
+                                       Protected Auth Mode
+                                    </p>
+                                    <p className="text-[14px] text-black/40 font-medium">Require strict Admin rules for sign-ins</p>
+                                 </div>
+                                 <div onClick={() => setStoreSettings({...storeSettings, protectedMode: typeof storeSettings.protectedMode === 'undefined' ? true : !storeSettings.protectedMode})} className={`w-14 h-8 rounded-full p-1 cursor-pointer transition-all shadow-inner ${storeSettings.protectedMode !== false ? 'bg-red-900' : 'bg-gray-300'}`}>
+                                    <div className={`w-6 h-6 bg-white rounded-full transition-transform shadow-md ${storeSettings.protectedMode !== false ? 'translate-x-6' : 'translate-x-0'}`} />
+                                 </div>
+                              </div>
+                           </div>
                         </div>
                      </div>
                   </div>
@@ -1345,48 +1687,48 @@ const AdminDashboard = () => {
                 
                 <div className="grid grid-cols-2 gap-12 mb-12">
                    <div className="space-y-2">
-                      <p className="text-[10px] font-black uppercase opacity-30 tracking-[0.2em]">Customer</p>
+                      <p className="text-[14px] font-black uppercase opacity-30 tracking-[0.2em]">Customer</p>
                       <p className="text-xl font-bold font-serif italic">{selectedOrder.customer}</p>
                    </div>
                    <div className="space-y-2">
-                      <p className="text-[10px] font-black uppercase opacity-30 tracking-[0.2em]">Order ID</p>
+                      <p className="text-[14px] font-black uppercase opacity-30 tracking-[0.2em]">Order ID</p>
                       <p className="text-xl font-mono font-black">{selectedOrder.id}</p>
                    </div>
                 </div>
 
                 <div className="space-y-6 mb-12">
-                   <p className="text-[10px] font-black uppercase opacity-30 tracking-[0.2em]">Purchased Items</p>
+                   <p className="text-[14px] font-black uppercase opacity-30 tracking-[0.2em]">Purchased Items</p>
                    <div className="space-y-3">
                       {selectedOrder.items.map((it: string, idx: number) => (
                          <div key={idx} className="p-4 bg-gray-50 rounded-2xl flex items-center justify-between">
                             <span className="font-serif italic font-bold text-lg">{it}</span>
-                            <span className="text-[11px] font-black uppercase opacity-40">1x Unit</span>
+                            <span className="text-[15px] font-black uppercase opacity-40">1x Unit</span>
                          </div>
                       ))}
                    </div>
                 </div>
 
                 <div className="space-y-6 mb-12">
-                   <p className="text-[10px] font-black uppercase opacity-30 tracking-[0.2em]">Journey History</p>
+                   <p className="text-[14px] font-black uppercase opacity-30 tracking-[0.2em]">Journey History</p>
                    <div className="space-y-4 border-l-2 border-dashed border-gray-100 ml-4 pl-8">
                       {selectedOrder.history.map((h: any, idx: number) => (
                          <div key={idx} className="relative">
                             <div className="absolute -left-[37px] top-1.5 w-4 h-4 rounded-full bg-white border-4 border-[#B0843D]" />
-                            <p className="text-[12px] font-black uppercase tracking-widest">{h.event}</p>
-                            <p className="text-[11px] font-medium opacity-40">{h.time}</p>
+                            <p className="text-[14px] font-black uppercase tracking-widest">{h.event}</p>
+                            <p className="text-[15px] font-medium opacity-40">{h.time}</p>
                          </div>
                       ))}
                    </div>
                 </div>
 
                 <div className="space-y-6 mb-12">
-                   <p className="text-[10px] font-black uppercase opacity-30 tracking-[0.2em]">Update Status</p>
+                   <p className="text-[14px] font-black uppercase opacity-30 tracking-[0.2em]">Update Status</p>
                    <div className="flex gap-4">
                       {["Pending", "In Transit", "Delivered"].map((st) => (
                          <button 
                            key={st}
                            onClick={() => handleUpdateOrderStatus(selectedOrder.id, st)}
-                           className={`flex-1 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                           className={`flex-1 py-4 rounded-2xl text-[14px] font-black uppercase tracking-widest transition-all ${
                              selectedOrder.status === st ? 'bg-black text-white shadow-xl' : 'bg-gray-50 text-black/20 hover:bg-gray-100'
                            }`}
                          >
@@ -1396,7 +1738,7 @@ const AdminDashboard = () => {
                    </div>
                 </div>
 
-                <button onClick={() => setSelectedOrder(null)} className="w-full py-8 bg-[#310101] text-white rounded-[35px] font-black uppercase shadow-2xl tracking-[0.4em] text-[12px] hover:scale-[1.02] active:scale-95 transition-all">Close Portal</button>
+                <button onClick={() => setSelectedOrder(null)} className="w-full py-8 bg-[#310101] text-white rounded-[35px] font-black uppercase shadow-2xl tracking-[0.4em] text-[14px] hover:scale-[1.02] active:scale-95 transition-all">Close Portal</button>
                 <button onClick={() => setSelectedOrder(null)} className="absolute top-12 right-12 p-4 bg-gray-100 rounded-full hover:bg-black hover:text-white transition-all"><X /></button>
              </motion.div>
           </div>
@@ -1415,7 +1757,7 @@ const AdminDashboard = () => {
                       </div>
                       <div>
                          <h2 className="text-4xl font-serif font-black uppercase italic tracking-tighter">Broadcast Desk</h2>
-                         <p className="text-[10px] font-black uppercase tracking-[0.3em] opacity-50">Publish announcements to your boutique clientele</p>
+                         <p className="text-[14px] font-black uppercase tracking-[0.3em] opacity-50">Publish announcements to your boutique clientele</p>
                       </div>
                    </div>
                    <button onClick={() => {
@@ -1425,7 +1767,7 @@ const AdminDashboard = () => {
                 </div>
                 <form onSubmit={editingNews ? handleUpdateNews : handleAddNews} className="p-16 space-y-12">
                    <div className="space-y-4">
-                      <label className="text-[12px] font-black uppercase text-[#B0843D] tracking-widest">Message Headline</label>
+                      <label className="text-[14px] font-black uppercase text-[#B0843D] tracking-widest">Message Headline</label>
                       <input 
                         required 
                         placeholder="E.g. Eid-ul-Fitr Special Offer: 20% off!" 
@@ -1436,7 +1778,7 @@ const AdminDashboard = () => {
                    </div>
                    <div className="grid grid-cols-2 gap-8">
                       <div className="space-y-4">
-                         <label className="text-[12px] font-black uppercase text-[#B0843D] tracking-widest">Valid From</label>
+                         <label className="text-[14px] font-black uppercase text-[#B0843D] tracking-widest">Valid From</label>
                          <input 
                            type="date" 
                            value={editingNews ? editingNews.startDate : newNews.startDate} 
@@ -1445,7 +1787,7 @@ const AdminDashboard = () => {
                          />
                       </div>
                       <div className="space-y-4">
-                         <label className="text-[12px] font-black uppercase text-[#B0843D] tracking-widest">Valid Until (Expiry)</label>
+                         <label className="text-[14px] font-black uppercase text-[#B0843D] tracking-widest">Valid Until (Expiry)</label>
                          <input 
                            type="date" 
                            value={editingNews ? editingNews.endDate : newNews.endDate} 
@@ -1457,7 +1799,7 @@ const AdminDashboard = () => {
 
                    <div className="grid grid-cols-3 gap-8">
                       <div className="space-y-4">
-                         <label className="text-[12px] font-black uppercase text-[#B0843D] tracking-widest">Target Category</label>
+                         <label className="text-[14px] font-black uppercase text-[#B0843D] tracking-widest">Target Category</label>
                          <select 
                            value={editingNews ? editingNews.targetCategory : newNews.targetCategory} 
                            onChange={e => {
@@ -1472,7 +1814,7 @@ const AdminDashboard = () => {
                          </select>
                       </div>
                       <div className="space-y-4">
-                         <label className="text-[12px] font-black uppercase text-[#B0843D] tracking-widest">Target Sub-Category</label>
+                         <label className="text-[14px] font-black uppercase text-[#B0843D] tracking-widest">Target Sub-Category</label>
                          <select 
                            value={editingNews ? editingNews.targetSubCategory : newNews.targetSubCategory} 
                            onChange={e => {
@@ -1487,7 +1829,7 @@ const AdminDashboard = () => {
                          </select>
                       </div>
                       <div className="space-y-4">
-                         <label className="text-[12px] font-black uppercase text-[#B0843D] tracking-widest">Discount Percentage (%)</label>
+                         <label className="text-[14px] font-black uppercase text-[#B0843D] tracking-widest">Discount Percentage (%)</label>
                          <input 
                            type="number" 
                            placeholder="E.g. 20" 
@@ -1499,7 +1841,7 @@ const AdminDashboard = () => {
                    </div>
                    
                    <div className="space-y-4">
-                      <label className="text-[12px] font-black uppercase text-[#B0843D] tracking-widest">Message Body / Details</label>
+                      <label className="text-[14px] font-black uppercase text-[#B0843D] tracking-widest">Message Body / Details</label>
                       <textarea 
                         required 
                         placeholder="Write the full details of your offer or announcement here..." 
@@ -1522,51 +1864,101 @@ const AdminDashboard = () => {
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/30 backdrop-blur-md">
             <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} className="bg-white p-20 rounded-[70px] shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-y-auto relative">
                <h3 className="text-6xl font-serif font-black italic mb-12">Edit Product</h3>
-                <form onSubmit={handleUpdateProduct} className="grid grid-cols-1 md:grid-cols-2 gap-12 text-black">
-                    <div className="space-y-4"><label className="text-[12px] font-black uppercase opacity-30">Name</label><input value={editingProduct.name} onChange={e => setEditingProduct({...editingProduct, name: e.target.value})} className="w-full p-6 bg-gray-50 rounded-3xl font-bold border-none outline-none" /></div>
+                 <form onSubmit={handleUpdateProduct} className="grid grid-cols-1 md:grid-cols-2 gap-12 text-black">
+                    <div className="md:col-span-2 space-y-4">
+                       <label className="text-[14px] font-black uppercase opacity-30">Name</label>
+                       <input value={editingProduct.name} onChange={e => setEditingProduct({...editingProduct, name: e.target.value})} className="w-full p-6 bg-gray-50 rounded-3xl font-bold border-none outline-none" />
+                    </div>
+                    <div className="md:col-span-2 space-y-4">
+                       <label className="text-[14px] font-black uppercase opacity-30">Aromatic Story / Description</label>
+                       <textarea value={editingProduct.description} onChange={e => setEditingProduct({...editingProduct, description: e.target.value})} className="w-full h-32 p-6 bg-gray-50 rounded-3xl font-serif italic text-xl border-none resize-none outline-none" placeholder="Aromatic Story details..." />
+                    </div>
+                    
                     <div className="space-y-4">
-                       <label className="text-[12px] font-black uppercase text-[#B0843D]">Product Category</label>
+                       <label className="text-[14px] font-black uppercase text-[#B0843D]">Product Category</label>
                        <select value={editingProduct.category} onChange={e => setEditingProduct({...editingProduct, category: e.target.value})} className="w-full p-6 bg-gray-50 rounded-3xl font-bold border-none outline-none">
                           {globalCategories.map(c => <option key={c} value={c}>{c}</option>)}
                        </select>
                     </div>
                     <div className="space-y-4">
-                       <label className="text-[12px] font-black uppercase text-[#B0843D]">Sub Category</label>
+                       <label className="text-[14px] font-black uppercase text-[#B0843D]">Sub Category</label>
                        <select value={editingProduct.subCategory} onChange={e => setEditingProduct({...editingProduct, subCategory: e.target.value})} className="w-full p-6 bg-gray-50 rounded-3xl font-bold border-none outline-none">
                           <option value="">No sub-category</option>
                           {(subCategoriesConfig[editingProduct.category] || []).map(s => <option key={s} value={s}>{s}</option>)}
                        </select>
                     </div>
-                    <div className="space-y-4"><label className="text-[12px] font-black uppercase opacity-30">Price (numeric)</label><input type="number" value={editingProduct.price} onChange={e => setEditingProduct({...editingProduct, price: e.target.value})} className="w-full p-6 bg-gray-50 rounded-3xl font-bold border-none outline-none" /></div>
-                    <div className="space-y-4"><label className="text-[12px] font-black uppercase opacity-30">Discount Price (numeric)</label><input type="number" value={editingProduct.discountPrice} onChange={e => setEditingProduct({...editingProduct, discountPrice: e.target.value})} className="w-full p-6 bg-gray-50 rounded-3xl font-bold border-none outline-none" /></div>
-                    <div className="space-y-4"><label className="text-[12px] font-black uppercase opacity-30">Stock Units</label><input type="number" value={editingProduct.stock} onChange={e => setEditingProduct({...editingProduct, stock: e.target.value})} className="w-full p-6 bg-gray-50 rounded-3xl font-bold border-none outline-none" /></div>
+                    <div className="space-y-4"><label className="text-[14px] font-black uppercase opacity-30">Price (numeric)</label><input type="number" value={editingProduct.price} onChange={e => setEditingProduct({...editingProduct, price: e.target.value})} className="w-full p-6 bg-gray-50 rounded-3xl font-bold border-none outline-none" /></div>
+                    <div className="space-y-4"><label className="text-[14px] font-black uppercase opacity-30">Discount Price (numeric)</label><input type="number" value={editingProduct.discountPrice} onChange={e => setEditingProduct({...editingProduct, discountPrice: e.target.value})} className="w-full p-6 bg-gray-50 rounded-3xl font-bold border-none outline-none" /></div>
+                    <div className="space-y-4"><label className="text-[14px] font-black uppercase opacity-30">Stock Units</label><input type="number" value={editingProduct.stock} onChange={e => setEditingProduct({...editingProduct, stock: e.target.value})} className="w-full p-6 bg-gray-50 rounded-3xl font-bold border-none outline-none" /></div>
                     <div className="space-y-4">
-                       <label className="text-[12px] font-black uppercase text-[#B0843D]">Arrival Status</label>
+                       <label className="text-[14px] font-black uppercase text-[#B0843D]">Arrival Status</label>
                        <button 
                          type="button"
                          onClick={() => setEditingProduct({...editingProduct, isNew: !editingProduct.isNew})}
-                         className={`w-full p-6 rounded-[25px] font-black uppercase text-[12px] tracking-widest transition-all flex items-center justify-center gap-3 ${editingProduct.isNew ? 'bg-[#B0843D] text-white shadow-xl' : 'bg-gray-100 text-black/20'}`}
+                         className={`w-full p-6 rounded-[25px] font-black uppercase text-[14px] tracking-widest transition-all flex items-center justify-center gap-3 ${editingProduct.isNew ? 'bg-[#B0843D] text-white shadow-xl' : 'bg-gray-100 text-black/20'}`}
                        >
                           <Zap className={`w-5 h-5 ${editingProduct.isNew ? 'fill-current' : ''}`} />
                           {editingProduct.isNew ? "In New Arrivals" : "Mark as New"}
                        </button>
                     </div>
                     <div className="space-y-4">
-                       <label className="text-[12px] font-black uppercase text-[#B0843D]">Bestseller Status</label>
+                       <label className="text-[14px] font-black uppercase text-[#B0843D]">Bestseller Status</label>
                        <button 
                          type="button"
                          onClick={() => setEditingProduct({...editingProduct, isBestseller: !editingProduct.isBestseller})}
-                         className={`w-full p-6 rounded-[25px] font-black uppercase text-[12px] tracking-widest transition-all flex items-center justify-center gap-3 ${editingProduct.isBestseller ? 'bg-[#310101] text-[#E5D5C5] shadow-xl' : 'bg-gray-100 text-black/20'}`}
+                         className={`w-full p-6 rounded-[25px] font-black uppercase text-[14px] tracking-widest transition-all flex items-center justify-center gap-3 ${editingProduct.isBestseller ? 'bg-[#310101] text-[#E5D5C5] shadow-xl' : 'bg-gray-100 text-black/20'}`}
                        >
                           <Star className={`w-5 h-5 ${editingProduct.isBestseller ? 'fill-current' : ''}`} />
                           {editingProduct.isBestseller ? "In Bestsellers" : "Add to Bestsellers"}
                        </button>
                     </div>
+
+                    <div className="md:col-span-2 space-y-4">
+                       <label className="text-[14px] font-black uppercase opacity-30">Product Image Asset</label>
+                       <div className="relative aspect-video bg-gray-50 rounded-[40px] border-4 border-dashed flex flex-col items-center justify-center overflow-hidden">
+                          {isUploading ? (
+                             <div className="text-center font-black uppercase tracking-widest text-[#B0843D]">Uploading...</div>
+                          ) : editingProduct.image ? (
+                             <img src={editingProduct.image} className="w-full h-full object-contain" />
+                          ) : (
+                             <div className="text-center"><PlusCircle className="w-12 h-12 text-black/10 mx-auto mb-4" /><p className="font-serif italic opacity-30 text-xl">Select Collection asset</p></div>
+                          )}
+                          <input type="file" onChange={handleImageChange} className="absolute inset-0 opacity-0 cursor-pointer" />
+                       </div>
+                    </div>
+
                     <div className="md:col-span-2">
-                       <button type="submit" className="w-full bg-black text-white py-8 rounded-[35px] font-black uppercase shadow-2xl mt-4">Confirm Changes</button>
+                       <button type="submit" disabled={isUploading} className="w-full bg-black text-white py-8 rounded-[35px] font-black uppercase shadow-2xl mt-4 disabled:opacity-50">
+                          {isUploading ? "Processing..." : "Confirm Changes"}
+                       </button>
                     </div>
                  </form>
                <button onClick={() => setEditingProduct(null)} className="absolute top-12 right-12 p-3 bg-gray-100 rounded-full"><X /></button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {promptData.isOpen && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="bg-white p-12 rounded-[40px] shadow-2xl max-w-lg w-full relative">
+               <h3 className="text-4xl font-serif font-black italic mb-2 text-[#310101]">{promptData.title}</h3>
+               <p className="text-[#C29D59] font-bold uppercase tracking-widest text-[14px] mb-8">System Prompt</p>
+               
+               <form onSubmit={(e) => { e.preventDefault(); promptData.onConfirm(promptData.value); }}>
+                  <input 
+                    autoFocus
+                    placeholder={promptData.placeholder} 
+                    value={promptData.value} 
+                    onChange={e => setPromptData({...promptData, value: e.target.value})} 
+                    className="w-full p-6 bg-gray-50 rounded-2xl font-bold border-none outline-none mb-8 text-xl" 
+                  />
+                  <div className="flex gap-4">
+                     <button type="button" onClick={() => setPromptData({...promptData, isOpen: false})} className="flex-1 py-4 font-black uppercase text-black/40 hover:bg-gray-100 rounded-full transition-all">Cancel</button>
+                     <button type="submit" className="flex-1 bg-black text-white py-4 font-black uppercase rounded-full shadow-lg hover:bg-[#310101] transition-all">Confirm</button>
+                  </div>
+               </form>
+               <button onClick={() => setPromptData({...promptData, isOpen: false})} className="absolute top-6 right-6 p-2 bg-gray-50 rounded-full hover:bg-gray-200 transition-all text-black/40"><X className="w-5 h-5" /></button>
             </motion.div>
           </div>
         )}

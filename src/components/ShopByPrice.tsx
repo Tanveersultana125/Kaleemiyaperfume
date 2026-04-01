@@ -40,7 +40,7 @@ const ShopByPrice = () => {
           <button
             key={tab}
             onClick={() => setActive(tab)}
-            className={`px-4 py-1.5 rounded-full text-[8.5px] md:text-[9px] font-sans font-bold tracking-[0.15em] uppercase transition-all duration-300 border ${
+            className={`px-4 py-1.5 rounded-full text-[8.5px] md:text-[11px] font-sans font-bold tracking-[0.15em] uppercase transition-all duration-300 border ${
               active === tab
                 ? "bg-primary border-primary text-white shadow-lg shadow-primary/20"
                 : "bg-transparent border-primary/20 text-foreground/60 hover:border-primary/40 hover:text-primary"

@@ -64,7 +64,7 @@ const ContactSection = () => {
                   </div>
                   <div>
                     <h4 className="font-serif text-base text-foreground mb-1">Our Boutique</h4>
-                    <address className="not-italic text-muted-foreground font-sans text-xs leading-relaxed">
+                    <address className="not-italic text-muted-foreground font-sans text-sm leading-relaxed">
                       Govt Hospital, 11-2-828, Niyaz Heights,<br />
                       Mallepally Road, Jamia Masjid Rd, Hyderabad, 500001
                     </address>
@@ -77,7 +77,7 @@ const ContactSection = () => {
                   </div>
                   <div>
                     <h4 className="font-serif text-base text-foreground mb-1">Call Us</h4>
-                    <a href="tel:+919876543210" className="text-muted-foreground font-sans text-xs hover:text-primary transition-colors">
+                    <a href="tel:+919876543210" className="text-muted-foreground font-sans text-sm hover:text-primary transition-colors">
                       +91 98765 43210
                     </a>
                   </div>
@@ -94,14 +94,14 @@ const ContactSection = () => {
                     placeholder="Name" 
                     value={formData.name}
                     onChange={(e) => setFormData({...formData, name: e.target.value})}
-                    className="bg-muted/30 border border-border/50 rounded-sm px-4 py-2.5 text-xs focus:outline-none focus:border-primary/50" 
+                    className="bg-muted/30 border border-border/50 rounded-sm px-4 py-2.5 text-sm focus:outline-none focus:border-primary/50" 
                   />
                   <input 
                     type="email" 
                     placeholder="Email" 
                     value={formData.email}
                     onChange={(e) => setFormData({...formData, email: e.target.value})}
-                    className="bg-muted/30 border border-border/50 rounded-sm px-4 py-2.5 text-xs focus:outline-none focus:border-primary/50" 
+                    className="bg-muted/30 border border-border/50 rounded-sm px-4 py-2.5 text-sm focus:outline-none focus:border-primary/50" 
                   />
                 </div>
                 <textarea 
@@ -109,9 +109,9 @@ const ContactSection = () => {
                   rows={3} 
                   value={formData.message}
                   onChange={(e) => setFormData({...formData, message: e.target.value})}
-                  className="w-full bg-muted/30 border border-border/50 rounded-sm px-4 py-2.5 text-xs focus:outline-none focus:border-primary/50" 
+                  className="w-full bg-muted/30 border border-border/50 rounded-sm px-4 py-2.5 text-sm focus:outline-none focus:border-primary/50" 
                 />
-                <Button type="submit" variant="gold" className="w-full md:w-auto px-10 text-[10px] tracking-[0.2em] uppercase rounded-sm h-10">
+                <Button type="submit" variant="gold" className="w-full md:w-auto px-10 text-[14px] tracking-[0.2em] uppercase rounded-sm h-10">
                   Submit Inquiry
                 </Button>
               </form>
@@ -141,7 +141,7 @@ const ContactSection = () => {
                 href="https://www.google.com/maps/place/Kaleemiya+Islamic+books+Store+Perfumes+and+more/@17.3813754,78.4604926,17z/data=!4m2!3m1!1s0x3bcb977980125195:0x98245389af2a7b69" 
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="bg-[#310101]/95 backdrop-blur-sm border border-primary/40 px-4 py-2.5 rounded-full text-[9px] text-[#F9F6F0] uppercase tracking-[0.2em] font-bold hover:bg-primary transition-all shadow-xl flex items-center gap-2"
+                className="bg-[#310101]/95 backdrop-blur-sm border border-primary/40 px-4 py-2.5 rounded-full text-[11px] text-[#F9F6F0] uppercase tracking-[0.2em] font-bold hover:bg-primary transition-all shadow-xl flex items-center gap-2"
               >
                 OPEN IN MAPS <Send className="w-3 h-3 text-primary group-hover:text-white" />
               </a>

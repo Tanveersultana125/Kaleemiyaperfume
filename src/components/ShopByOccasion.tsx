@@ -42,7 +42,7 @@ const ShopByOccasion = () => {
           <button
             key={tab}
             onClick={() => setActive(tab)}
-            className={`px-4 py-1.5 rounded-full text-[8.5px] md:text-[9px] font-sans font-bold tracking-[0.15em] uppercase transition-all duration-300 border ${
+            className={`px-4 py-1.5 rounded-full text-[8.5px] md:text-[11px] font-sans font-bold tracking-[0.15em] uppercase transition-all duration-300 border ${
               active === tab
                 ? "bg-primary border-primary text-white shadow-lg shadow-primary/20"
                 : "bg-transparent border-white/20 text-white/60 hover:border-primary/40 hover:text-white"
@@ -93,7 +93,7 @@ const ShopByOccasion = () => {
       <div className="mt-12 text-center">
         <Link 
           to="/shop" 
-          className="text-primary font-sans font-bold uppercase tracking-[0.2em] text-xs border-b border-primary/30 pb-1 hover:border-primary transition-colors"
+          className="text-primary font-sans font-bold uppercase tracking-[0.2em] text-sm border-b border-primary/30 pb-1 hover:border-primary transition-colors"
         >
           View All Collections
         </Link>

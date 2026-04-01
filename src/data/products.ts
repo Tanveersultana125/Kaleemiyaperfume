@@ -41,6 +41,7 @@ export interface Product {
   category: "perfumes" | "attar" | "oud" | "giftsets" | "prayer mats" | "books";
   subCategory?: string;
   isNew?: boolean;
+  isBestseller?: boolean;
   bestsellerRank?: number;
   description?: string;
   highlights?: string[];

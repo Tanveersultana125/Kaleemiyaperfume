@@ -5,22 +5,22 @@ import { Button } from "@/components/ui/button";
 
 const footerLinks = {
   Shop: [
-    { name: "Perfumes", href: "/shop" },
-    { name: "Attar", href: "/attar" },
-    { name: "Oud", href: "/oud" },
-    { name: "Bakhoor", href: "/gift-sets" },
-    { name: "Gift Sets", href: "/gift-sets" },
+    { name: "Perfumes", href: "/shop?category=perfumes" },
+    { name: "Attar", href: "/shop?category=attar" },
+    { name: "Oud", href: "/shop?category=oud" },
+    { name: "Bakhoor", href: "/shop?category=bakhoor" },
+    { name: "Gift Sets", href: "/shop?category=giftsets" },
   ],
   Support: [
-    { name: "Track Order", href: "#" },
-    { name: "Shipping Info", href: "#" },
-    { name: "Returns", href: "#" },
-    { name: "FAQ", href: "#" },
+    { name: "Track Order", href: "/track-order" },
+    { name: "Shipping Info", href: "/shipping-info" },
+    { name: "Returns", href: "/returns" },
+    { name: "FAQ", href: "/faq" },
   ],
   Policies: [
-    { name: "Privacy Policy", href: "#" },
-    { name: "Terms of Service", href: "#" },
-    { name: "Refund Policy", href: "#" },
+    { name: "Privacy Policy", href: "/privacy-policy" },
+    { name: "Terms of Service", href: "/terms-of-service" },
+    { name: "Refund Policy", href: "/refund-policy" },
   ],
   Contact: [
     { name: "support@kaleemiya.com", href: "mailto:support@kaleemiya.com" },
@@ -41,16 +41,16 @@ const Footer = () => {
         className="bg-[#F9F6F0] max-w-full mx-auto px-4 md:px-10 lg:px-16 py-16 text-center border-b border-[#310101]/10"
       >
         <h3 className="font-serif text-2xl md:text-3xl mb-3 text-[#310101]">Join the Kaleemiya World</h3>
-        <p className="text-[#310101]/70 font-sans text-sm mb-8 max-w-md mx-auto">
+        <p className="text-[#310101] font-sans text-sm mb-8 max-w-md mx-auto">
           Exclusive launches, artisan stories, and offers — delivered with care.
         </p>
         <div className="flex flex-col sm:flex-row max-w-md mx-auto gap-3">
           <input
             type="email"
             placeholder="Your email address"
-            className="flex-1 bg-white border border-[#310101]/20 rounded-none px-4 py-3 text-sm font-sans text-[#310101] placeholder:text-[#310101]/40 focus:outline-none focus:border-[#310101]/50 transition-colors"
+            className="flex-1 bg-white border border-[#310101]/20 rounded-none px-4 py-3 text-sm font-sans text-[#310101] placeholder:text-[#310101]/90 focus:outline-none focus:border-[#310101]/50 transition-colors"
           />
-          <Button className="px-6 py-6 sm:py-3 text-xs tracking-[0.15em] uppercase rounded-none bg-[#310101] text-white hover:bg-[#310101]/90 w-full sm:w-auto">
+          <Button className="px-6 py-6 sm:py-3 text-sm tracking-[0.15em] uppercase rounded-none bg-[#310101] text-white hover:bg-[#310101]/90 w-full sm:w-auto">
             Subscribe
           </Button>
         </div>
@@ -66,11 +66,11 @@ const Footer = () => {
                 {links.map((link) => (
                   <li key={link.name}>
                     {link.href.startsWith("http") || link.href.startsWith("mailto") || link.href.startsWith("tel") || link.href.startsWith("#") ? (
-                      <a href={link.href} className="text-[#310101]/85 font-sans text-xs hover:text-[#310101] transition-colors duration-300 break-words">
+                      <a href={link.href} className="text-[#310101]/85 font-sans text-sm hover:text-[#310101] transition-colors duration-300 break-words">
                         {link.name}
                       </a>
                     ) : (
-                      <Link to={link.href} className="text-[#310101]/85 font-sans text-xs hover:text-[#310101] transition-colors duration-300">
+                      <Link to={link.href} className="text-[#310101]/85 font-sans text-sm hover:text-[#310101] transition-colors duration-300">
                         {link.name}
                       </Link>
                     )}
@@ -90,7 +90,7 @@ const Footer = () => {
                 alt="Kaleemiya Logo" 
                 className="h-14 w-auto object-contain hover:scale-110 transition-transform duration-500 sepia-[1.2] saturate-[25] hue-rotate-[20deg] brightness-[0.95]"
               />
-              <p className="text-[#F9F6F0]/60 text-xs font-sans font-medium">
+              <p className="text-[#F9F6F0]/60 text-sm font-sans font-medium">
                 © 2026 Kaleemiya Perfumes. All rights reserved.
               </p>
             </div>

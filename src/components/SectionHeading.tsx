@@ -15,7 +15,7 @@ const SectionHeading = ({ title, subtitle, light = false }: SectionHeadingProps)
       transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
       className="text-center mb-16"
     >
-      <h2 className={`text-3xl md:text-5xl font-serif font-light tracking-tight mb-4 ${light ? 'text-white' : 'text-foreground'}`}>
+      <h2 className={`text-3xl md:text-5xl font-serif font-medium tracking-tight mb-4 ${light ? 'text-white' : 'text-foreground'}`}>
         {title}
       </h2>
       {subtitle && (
