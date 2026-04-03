@@ -286,10 +286,59 @@ const Shop = ({
         {/* Subcategory and Category Filters Ribbon */}
         {/* Unified Filter & Navigation Ribbon */}
         {!discountParam && (
-          <div className="flex flex-col lg:flex-row items-center justify-between gap-6 py-10 border-y border-[#310101]/5 mt-12 bg-white/40 px-8 rounded-[40px] shadow-sm">
+          <div className="flex flex-col xl:flex-row xl:items-center gap-4 xl:gap-6 py-6 md:py-10 border-y border-[#310101]/5 mt-6 md:mt-12 bg-transparent xl:bg-white/40 px-0 xl:px-8 rounded-none xl:rounded-[40px] shadow-none xl:shadow-sm">
            
-           {/* Left side: Search Reset & Breadcrumb style Action */}
-           <div className="flex shrink-0">
+           {/* Mobile Top Row: Reset + Sort */}
+           <div className="flex xl:hidden items-center justify-between px-4 sm:px-6 w-full shrink-0 gap-3">
+              <button 
+                onClick={() => {
+                  setActiveCategory("all");
+                  setActiveSubCategory("all");
+                  setActiveGender("ALL");
+                  navigate("/shop", { replace: true });
+                }}
+                className={`flex-1 text-[11px] sm:text-[13px] font-black uppercase tracking-[0.1em] sm:tracking-[0.2em] transition-all px-4 sm:px-8 py-3 rounded-full border-2 whitespace-nowrap flex items-center justify-center ${
+                  activeCategory === "all" ? "bg-[#310101] border-[#310101] text-white shadow-md" : "bg-white border-[#310101]/10 text-[#310101]/80 shadow-sm"
+                }`}
+              >
+                All Products
+              </button>
+
+              <div className="relative shrink-0 z-40">
+                 <button 
+                   onClick={() => setIsSortOpen(!isSortOpen)}
+                   className="flex items-center justify-center gap-2 border border-[#310101]/10 px-4 sm:px-8 py-3 rounded-full text-[11px] sm:text-[13px] font-black uppercase tracking-[0.1em] sm:tracking-[0.2em] text-[#310101] bg-white shadow-sm whitespace-nowrap"
+                 >
+                    {activeSort}
+                    <ChevronDown className={`w-3 h-3 transition-transform duration-500 ${isSortOpen ? 'rotate-180' : ''}`} />
+                 </button>
+                 <AnimatePresence>
+                   {isSortOpen && (
+                      <motion.div 
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 10 }}
+                        className="absolute right-0 top-[calc(100%+8px)] w-56 bg-white border border-[#310101]/10 rounded-2xl shadow-xl z-50 overflow-hidden py-2"
+                      >
+                         {sortOptionsArr.map(opt => (
+                            <button 
+                              key={opt}
+                              onClick={() => { setActiveSort(opt); setIsSortOpen(false); }}
+                              className={`w-full text-left px-5 py-3 text-[11px] sm:text-[12px] font-black uppercase tracking-widest transition-all ${
+                                activeSort === opt ? "text-[#B0843D] bg-[#F9F6F2]" : "text-[#310101]/70 hover:text-[#310101] hover:bg-black/5"
+                              }`}
+                            >
+                               {opt}
+                            </button>
+                         ))}
+                      </motion.div>
+                   )}
+                 </AnimatePresence>
+              </div>
+           </div>
+
+           {/* Desktop Left side: Reset */}
+           <div className="hidden xl:flex shrink-0">
               <button 
                 onClick={() => {
                   setActiveCategory("all");
@@ -306,11 +355,11 @@ const Shop = ({
            </div>
 
            {/* Center: Scrollable Categories/Subcategories Pills */}
-           <div className="flex-1 overflow-x-auto scrollbar-hide">
+           <div className="flex-1 w-full overflow-x-auto scrollbar-hide py-2 xl:py-0">
               <motion.div 
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
-                className="flex items-center gap-3 px-4 min-w-max"
+                className="flex items-center gap-2 sm:gap-3 px-4 sm:px-6 xl:px-4 min-w-max"
               >
                 {activeCategory === "all" ? (
                   // Main Category Navigation
@@ -322,7 +371,7 @@ const Shop = ({
                           params.set("category", cat.toLowerCase());
                           navigate(`/shop?${params.toString()}`);
                       }}
-                      className="px-6 py-2.5 rounded-full text-[12px] font-black uppercase tracking-widest transition-all bg-[#F9F6F2] border border-[#310101]/10 text-[#310101]/80 hover:bg-[#310101] hover:text-[#E5D5C5] whitespace-nowrap"
+                      className="px-5 sm:px-6 py-2.5 rounded-full text-[11px] sm:text-[12px] font-black uppercase tracking-widest transition-all bg-[#F9F6F2] border border-[#310101]/10 text-[#310101]/80 hover:bg-[#310101] hover:text-[#E5D5C5] whitespace-nowrap"
                     >
                       {cat}
                     </button>
@@ -337,7 +386,7 @@ const Shop = ({
                             setActiveCategory(cat.toLowerCase());
                             setActiveSubCategory("all");
                         }}
-                        className={`px-6 py-2.5 rounded-full text-[12px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${
+                        className={`px-5 sm:px-6 py-2.5 rounded-full text-[11px] sm:text-[12px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${
                           activeCategory === cat.toLowerCase() ? "bg-[#B0843D] text-[#E5D5C5] shadow-lg" : "bg-[#F9F6F2] border border-[#310101]/10 text-[#310101]/80 hover:bg-[#310101] hover:text-[#E5D5C5]"
                         }`}
                       >
@@ -346,7 +395,7 @@ const Shop = ({
                     ))}
                     {activeCategorySubs.length > 0 && (
                       <>
-                        <div className="w-[1px] h-6 bg-[#310101]/10 mx-2 shrink-0"></div>
+                        <div className="w-[1px] h-6 bg-[#310101]/10 mx-1 sm:mx-2 shrink-0"></div>
                         {activeCategorySubs
                           .filter(sub => !extraCategories.map(c => c.toLowerCase()).includes(sub.toLowerCase()))
                           .map(sub => (
@@ -361,7 +410,7 @@ const Shop = ({
                                 setActiveSubCategory(s);
                               }
                             }}
-                            className={`px-6 py-2.5 rounded-full text-[12px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${
+                            className={`px-5 sm:px-6 py-2.5 rounded-full text-[11px] sm:text-[12px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${
                               (activeSubCategory === sub.toLowerCase() || (activeGender.toLowerCase() === sub.toLowerCase() && activeSubCategory === "all")) ? "bg-[#B0843D] text-[#E5D5C5] shadow-lg" : "bg-[#F9F6F2] border border-[#310101]/10 text-[#310101]/80 hover:bg-[#310101] hover:text-[#E5D5C5]"
                             }`}
                           >
@@ -375,9 +424,9 @@ const Shop = ({
               </motion.div>
            </div>
 
-           {/* Right: Sorting & Meta */}
-           <div className="flex items-center gap-6 shrink-0">
-              <span className="text-[12px] font-black uppercase tracking-widest text-[#310101]/40 hidden xl:block">
+           {/* Desktop Right: Sorting & Meta */}
+           <div className="hidden xl:flex items-center gap-6 shrink-0">
+              <span className="text-[12px] font-black uppercase tracking-widest text-[#310101]/40">
                  {filteredAndSortedProducts.length} Results
               </span>
               <div className="relative group/sort">

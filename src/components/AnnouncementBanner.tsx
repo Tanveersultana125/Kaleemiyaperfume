@@ -77,15 +77,15 @@ const AnnouncementBanner = () => {
         onClick={handleBannerClick}
         className="bg-[#310101] text-[#E5D5C5] relative z-[60] py-2.5 px-4 overflow-hidden border-b border-white/5 cursor-pointer hover:bg-[#3d0202] transition-colors group"
       >
-        <div className="max-w-[1440px] mx-auto flex items-center justify-center gap-6">
-          <div className="flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-[#B0843D] animate-pulse group-hover:scale-125 transition-transform" />
-            <span className="text-[14px] md:text-[15px] font-black uppercase tracking-[0.25em] whitespace-nowrap">
+        <div className="max-w-[1440px] mx-auto flex items-center justify-center gap-2 md:gap-6 pr-6 md:pr-0">
+          <div className="flex items-center gap-1.5 md:gap-2">
+            <Sparkles className="w-3 h-3 md:w-4 md:h-4 shrink-0 text-[#B0843D] animate-pulse group-hover:scale-125 transition-transform" />
+            <span className="text-[10px] sm:text-[12px] md:text-[15px] font-black uppercase tracking-widest md:tracking-[0.25em] text-center line-clamp-2 sm:whitespace-nowrap">
               {latestAnnouncement.title}
             </span>
           </div>
           
-          <div className="hidden md:block w-px h-3 bg-white/10" />
+          <div className="hidden md:block w-px h-3 bg-white/10 shrink-0" />
           
           <p className="hidden md:block text-[14px] font-medium tracking-wider opacity-60 truncate max-w-xl italic">
             {latestAnnouncement.content}
