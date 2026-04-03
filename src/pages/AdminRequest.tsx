@@ -58,7 +58,8 @@ const AdminRequest = () => {
         return;
       }
 
-      await addDoc(collection(db, "adminRequests"), {
+      const { doc, setDoc } = await import("firebase/firestore");
+      await setDoc(doc(db, "adminRequests", user.uid), {
         uid: user.uid,
         name: user.displayName || "Unknown User",
         email: user.email,

@@ -140,3 +140,21 @@
 ::-webkit-scrollbar-thumb:hover {
   background: hsl(43, 70%, 40%);
 }
+
+/* Boutique Artisan Scrollbar - Signature Palette */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 10px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #310101; /* Signature Maroon */
+  border-radius: 100px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #B0843D; /* Signature Gold */
+  border-radius: 100px;
+  border: 2px solid #310101; /* Creating the "Gap" effect with Maroon */
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #D4AF37; /* Luminous Gold on hover */
+  cursor: pointer;
+}

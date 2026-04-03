@@ -39,8 +39,8 @@ const AdminLogin = () => {
   return (
     <div className="min-h-screen bg-[#FDFCFB] flex flex-col lg:flex-row relative overflow-hidden">
       {/* Decorative Accents */}
-      <div className="absolute top-0 right-0 w-full h-full pointer-events-none opacity-[0.03]">
-        <img src="/logo.png" alt="" className="absolute -right-20 -top-20 w-[600px] brightness-0" />
+      <div className="absolute top-0 right-0 w-full h-full pointer-events-none opacity-[0.4]">
+        <img src="/logo.png" alt="" className="absolute -right-20 -top-20 w-[600px] mix-blend-multiply opacity-30" />
       </div>
 
       {/* Brand Side (Left/Top) */}
@@ -48,7 +48,11 @@ const AdminLogin = () => {
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_right,#B0843D_0%,transparent_40%)] opacity-20 pointer-events-none"></div>
         
         <div className="space-y-12 relative z-10 animate-in fade-in slide-in-from-left-10 duration-1000">
-          <img src="/logo.png" alt="Kaleemiya Logo" className="h-16 w-auto invert brightness-0" />
+          <img 
+            src="/logo.png" 
+            alt="Kaleemiya Logo" 
+            className="h-24 md:h-32 w-auto drop-shadow-2xl transition-all duration-700 hover:scale-110 brightness-110" 
+          />
           
           <div className="space-y-6">
             <div className="inline-flex items-center gap-3 bg-white/10 px-4 py-1.5 rounded-full border border-white/10">

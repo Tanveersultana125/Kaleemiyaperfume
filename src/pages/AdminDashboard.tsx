@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useProducts } from "@/hooks/useProducts";
+import RevenueVelocity from "@/components/RevenueVelocity";
 import { useAuth, SUPER_ADMIN_EMAILS } from "@/context/AuthContext";
 import { db } from "@/lib/firebase";
 import { 
@@ -32,6 +33,8 @@ import { toast } from "sonner";
 const AdminDashboard = () => {
   const { user, role, isSuperAdmin, logout } = useAuth();
   const [activeTab, setActiveTab] = useState("Dashboard");
+  const [processingRequestId, setProcessingRequestId] = useState<string | null>(null);
+  const [allInventory, setAllInventory] = useState<any[]>([]);
   const [systemHealth, setSystemHealth] = useState({
     db: "Checking...",
     cdn: "Checking...",
@@ -130,6 +133,14 @@ const AdminDashboard = () => {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [inventorySearch, setInventorySearch] = useState("");
+  const [debouncedInventorySearch, setDebouncedInventorySearch] = useState("");
+  
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedInventorySearch(inventorySearch);
+    }, 400); // 400ms Artisan Delay
+    return () => clearTimeout(handler);
+  }, [inventorySearch]);
 
   // Firestore Category Config
   const [globalCategories, setGlobalCategories] = useState<string[]>([]);
@@ -161,9 +172,9 @@ const AdminDashboard = () => {
       items: ["Oud Al Malikah", "Majestic Rose"], 
       qty: "2 Items", 
       payment: "Paid", 
-      amount: "₹5,999", 
+      amount: "â‚¹5,999", 
       status: "In Transit", 
-      location: "Mumbai Central Hub — Sorting Center",
+      location: "Mumbai Central Hub â€” Sorting Center",
       history: [
         { time: "Yesterday, 10:00 AM", event: "Package arrived at Mumbai Hub" },
         { time: "Monday, 2:00 PM", event: "Dispatched from Warehouse" }
@@ -175,9 +186,9 @@ const AdminDashboard = () => {
       items: ["Majestic Rose"], 
       qty: "1 Item", 
       payment: "Paid", 
-      amount: "₹3,450", 
+      amount: "â‚¹3,450", 
       status: "Delivered", 
-      location: "Dubai Logistics Park — Out for Delivery",
+      location: "Dubai Logistics Park â€” Out for Delivery",
       history: [
         { time: "Today, 04:30 PM", event: "Package Delivered" },
         { time: "Today, 09:00 AM", event: "Out for Delivery" }
@@ -189,9 +200,9 @@ const AdminDashboard = () => {
       items: ["Royal Bakhoor", "Sultan Blend", "Arabic Oud"], 
       qty: "3 Items", 
       payment: "Pending", 
-      amount: "₹2,800", 
+      amount: "â‚¹2,800", 
       status: "Pending", 
-      location: "Warehouse — Awaiting Courier",
+      location: "Warehouse â€” Awaiting Courier",
       history: [
         { time: "Just Now", event: "Order Received & Verified" }
       ]
@@ -272,12 +283,19 @@ const AdminDashboard = () => {
         setRequestLogs(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       });
 
+      // --- HIGH TRAFFIC OPTIMIZATION: Separate stats listener ---
+      const allProdQ = query(collection(db, "products"));
+      const unsubAll = onSnapshot(allProdQ, (snapshot) => {
+        setAllInventory(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      });
+
       return () => {
         unsub();
         unsubAdmins();
         unsubUsers();
         unsubNews();
         unsubLogs();
+        unsubAll();
       };
     }
   }, [role, isSuperAdmin, user?.uid]);
@@ -287,7 +305,7 @@ const AdminDashboard = () => {
     return stored ? JSON.parse(stored) : {
       name: "Kaleemiya Perfumes",
       email: "contact@kaleemiya.com",
-      currency: "INR (₹)",
+      currency: "INR (â‚¹)",
       maintenanceMode: false,
       accentColor: "#B0843D",
       publicLivePage: true,
@@ -321,9 +339,9 @@ const AdminDashboard = () => {
   const allCategories = Array.from(new Set([
     "Our Bestseller",
     "New Arrival",
-    ...globalCategories,
-    ...inventory.map(p => p.category ? p.category.charAt(0).toUpperCase() + p.category.slice(1) : "")
-  ])).filter(Boolean);
+    ...globalCategories.map(c => c.trim()),
+    ...inventory.map(p => (p.category || "").trim())
+  ].map(c => c.charAt(0).toUpperCase() + c.slice(1).toLowerCase()))).filter(Boolean);
 
   const dynamicSubCategories: Record<string, string[]> = {};
   allCategories.forEach(cat => {
@@ -462,28 +480,49 @@ const AdminDashboard = () => {
   });
 
   const handleApproveReq = async (requestId: string, uid: string, name: string) => {
-    if (!isSuperAdmin) return;
+    if (!isSuperAdmin || processingRequestId) return;
+    setProcessingRequestId(requestId);
     try {
-      const batch = writeBatch(db);
-      const requestRef = doc(db, "adminRequests", requestId);
-      batch.update(requestRef, { status: "approved" });
-      const userRef = doc(db, "users", uid);
-      batch.update(userRef, { role: "admin" });
-      await batch.commit();
-      toast.success(`Access granted for ${name}.`);
+       const { getFunctions, httpsCallable } = await import("firebase/functions");
+       const functions = getFunctions();
+       const processRequest = httpsCallable(functions, 'processAdminRequest');
+       
+       const loadingId = toast.loading(`Granting authority to ${name}...`);
+       
+       await processRequest({ 
+         requestId, 
+         targetUid: uid, 
+         action: "approve" 
+       });
+
+       toast.success(`Access granted for ${name}.`, { id: loadingId });
     } catch (error: any) {
       toast.error(error.message);
+    } finally {
+      setProcessingRequestId(null);
     }
   };
 
   const handleDenyReq = async (requestId: string, name: string) => {
-    if (!isSuperAdmin) return;
+    if (!isSuperAdmin || processingRequestId) return;
+    setProcessingRequestId(requestId);
     try {
-      const requestRef = doc(db, "adminRequests", requestId);
-      await updateDoc(requestRef, { status: "rejected" });
-      toast.success(`Request for ${name} rejected.`);
+      const { getFunctions, httpsCallable } = await import("firebase/functions");
+      const functions = getFunctions();
+      const processRequest = httpsCallable(functions, 'processAdminRequest');
+      
+      const loadingId = toast.loading(`Refusing request for ${name}...`);
+      
+      await processRequest({ 
+        requestId, 
+        action: "reject" 
+      });
+
+      toast.success(`Request for ${name} rejected.`, { id: loadingId });
     } catch (error: any) {
       toast.error(error.message);
+    } finally {
+      setProcessingRequestId(null);
     }
   };
 
@@ -546,9 +585,20 @@ const AdminDashboard = () => {
   ];
 
   const filteredProducts = (inventory || []).filter(p => {
-    const matchesCategory = filterCategory === "All" || (p.category || "").toLowerCase() === filterCategory.toLowerCase();
-    const matchesSearch = (p.name || "").toLowerCase().includes(inventorySearch.toLowerCase()) || 
-                          (p.category || "").toLowerCase().includes(inventorySearch.toLowerCase());
+    let matchesCategory = false;
+    const catSearch = filterCategory.trim().toUpperCase();
+    if (catSearch === "ALL" || catSearch === "FULL COLLECTION") {
+      matchesCategory = true;
+    } else if (catSearch === "OUR BESTSELLER") {
+      matchesCategory = p.isBestseller === true;
+    } else if (catSearch === "NEW ARRIVAL") {
+      matchesCategory = p.isNew === true;
+    } else {
+      matchesCategory = (p.category || "").trim().toLowerCase() === filterCategory.trim().toLowerCase();
+    }
+
+    const matchesSearch = (p.name || "").toLowerCase().includes(debouncedInventorySearch.toLowerCase()) || 
+                          (p.category || "").toLowerCase().includes(debouncedInventorySearch.toLowerCase());
     return matchesCategory && matchesSearch;
   });
 
@@ -592,7 +642,7 @@ const AdminDashboard = () => {
       
       await addProduct({
         ...newProduct,
-        price: `₹${parseInt(newProduct.price).toLocaleString()}`,
+        price: `â‚¹${parseInt(newProduct.price).toLocaleString()}`,
         numericPrice: parseInt(newProduct.price),
         stock: stockNum,
         status: stockNum > 10 ? "In Stock" : stockNum > 0 ? "Low Stock" : "Out of Stock",
@@ -617,7 +667,7 @@ const AdminDashboard = () => {
     const stockNum = parseInt(editingProduct.stock) || 0;
     updateProduct({
       ...editingProduct,
-      price: `₹${parseInt(editingProduct.price).toLocaleString()}`,
+      price: `â‚¹${parseInt(editingProduct.price).toLocaleString()}`,
       numericPrice: parseInt(editingProduct.price),
       stock: stockNum,
       status: stockNum > 10 ? "In Stock" : stockNum > 0 ? "Low Stock" : "Out of Stock",
@@ -673,7 +723,13 @@ const AdminDashboard = () => {
       {/* Sidebar */}
       <aside className={`${isSidebarOpen ? "w-64" : "w-20"} bg-[#310101] text-white transition-all duration-300 flex flex-col shrink-0 shadow-2xl relative z-20`}>
         <div className="p-6 border-b border-white/5 flex items-center justify-between">
-          {isSidebarOpen && <span className="font-serif text-xl tracking-[0.2em] uppercase italic text-[#E5D5C5]">Kaleemiya</span>}
+          {isSidebarOpen && (
+            <img 
+              src="/logo.png" 
+              alt="Kaleemiya Logo" 
+              className="h-8 w-auto object-contain drop-shadow-xl" 
+            />
+          )}
           <button onClick={() => setSidebarOpen(!isSidebarOpen)} className="p-1.5 hover:bg-white/10 rounded-lg">
             <Menu className="w-5 h-5 text-[#E5D5C5]" />
           </button>
@@ -760,8 +816,8 @@ const AdminDashboard = () => {
             </button>
             <div className="flex items-center gap-6 border-l pl-6 border-gray-100">
               <div className="text-right hidden sm:block">
-                <p className="text-[16px] font-black text-[#310101] uppercase tracking-[0.2em] leading-none mb-1">Kaleemiya</p>
-                <p className="text-[14px] text-[#310101]/60 font-bold uppercase tracking-widest underline decoration-[#B0843D]/30 underline-offset-4">Administrator</p>
+                <p className="text-[16px] font-black text-[#D4AF37] uppercase tracking-[0.2em] leading-none mb-1">Kaleemiya</p>
+                <p className="text-[14px] text-[#D4AF37]/60 font-bold uppercase tracking-widest underline decoration-[#D4AF37]/30 underline-offset-4 font-serif">Administrator</p>
               </div>
               <div className="w-11 h-11 rounded-2xl bg-[#310101] flex items-center justify-center text-[#F9F6F2] font-serif italic text-xl shadow-xl border border-white/10 ring-4 ring-gray-50">K</div>
             </div>
@@ -813,15 +869,43 @@ const AdminDashboard = () => {
 
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 px-2">
                 <div className="lg:col-span-2 space-y-10">
-                   <div className="bg-white rounded-[60px] p-12 border border-[#E5D5C5]/50 shadow-sm">
-                    <div className="flex justify-between items-center mb-8">
-                      <h4 className="text-2xl font-serif font-bold italic text-[#310101]">Revenue Velocity</h4>
-                      <span className="text-[14px] font-black text-[#310101]/90 uppercase tracking-widest">7 Days • LIVE</span>
+                   <div className="bg-[#F9F6F2] rounded-[60px] p-16 shadow-xl border border-[#310101]/5 relative overflow-hidden group/card min-h-[500px] flex flex-col justify-between">
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-[#B0843D] opacity-[0.03] rounded-full -mr-32 -mt-32 transition-transform duration-700 group-hover/card:scale-110"></div>
+                    <div className="flex justify-between items-start mb-12 relative z-10 w-full">
+                      <div className="space-y-1">
+                        <h4 className="text-4xl font-serif font-black italic text-[#310101] tracking-tight">Revenue Velocity</h4>
+                        <p className="text-[11px] font-black text-[#B0843D] uppercase tracking-[0.4em] opacity-60">Graphed Boutique Analytics</p>
+                      </div>
+                      <div className="bg-[#310101] text-[#E5D5C5] px-6 py-2 rounded-full text-[12px] font-black uppercase tracking-[0.2em] shadow-lg flex items-center gap-3">
+                         <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+                         7 Days • Live Data
+                      </div>
                     </div>
-                    <div className="h-64 flex items-end justify-between gap-4">
-                      {[40, 70, 45, 90, 65, 80, 100].map((height, i) => (
-                        <motion.div key={i} initial={{ height: 0 }} animate={{ height: `${height}%` }} transition={{ duration: 1, delay: i * 0.1 }}
-                          className="flex-1 bg-[#310101] rounded-t-2xl relative group/bar hover:bg-[#B0843D] transition-colors" />
+                    <div className="h-64 flex items-end justify-between gap-6 px-4 w-full mt-auto">
+                      {[
+                        { day: "MON", h: 40, v: "2.1k", g: "from-[#310101] to-[#B0843D]" },
+                        { day: "TUE", h: 70, v: "4.5k", g: "from-[#4a0101] to-[#D4AF37]" },
+                        { day: "WED", h: 45, v: "2.8k", g: "from-[#2b0000] to-[#E5D5C5]" },
+                        { day: "THU", h: 90, v: "6.2k", g: "from-[#B0843D] to-[#F9F6F2]" },
+                        { day: "FRI", h: 65, v: "4.1k", g: "from-[#310101] to-[#B0843D]" },
+                        { day: "SAT", h: 80, v: "5.5k", g: "from-[#6a0d0d] to-[#B0843D]" },
+                        { day: "SUN", h: 100, v: "8.0k", g: "from-[#310101] to-[#D4AF37]" },
+                      ].map((bar, i) => (
+                        <div key={i} className="flex-1 h-full flex flex-col justify-end gap-6 group/bar-container min-w-0">
+                          <div className="flex-1 relative flex items-end">
+                            <motion.div 
+                              initial={{ height: 0 }} 
+                              animate={{ height: `${bar.h}%` }} 
+                              transition={{ duration: 1, delay: i * 0.1 }}
+                              className={`w-full bg-gradient-to-t ${bar.g} rounded-t-2xl relative group/bar hover:scale-[1.05] transition-all duration-500 shadow-lg hover:shadow-2xl border-x border-t border-white/5 cursor-pointer`}
+                            >
+                               <div className="absolute -top-12 left-1/2 -translate-x-1/2 bg-[#310101] text-[#E5D5C5] px-4 py-2 rounded-2xl text-[12px] font-black uppercase tracking-widest opacity-0 group-hover/bar:opacity-100 transition-all duration-300 shadow-2xl border border-white/10 whitespace-nowrap z-50">
+                                 ₹{bar.v}
+                               </div>
+                            </motion.div>
+                          </div>
+                          <div className="text-[12px] font-black text-[#1A1A1A]/40 text-center uppercase tracking-widest leading-none pb-2">{bar.day}</div>
+                        </div>
                       ))}
                     </div>
                   </div>
@@ -831,11 +915,14 @@ const AdminDashboard = () => {
                       {inventory.slice(0, 4).map((item, i) => (
                         <div 
                           key={i} 
-                          onClick={() => setActiveTab("Manage Stock")}
-                          className="flex items-center justify-between group p-6 -mx-4 rounded-[30px] hover:bg-[#F9F6F2] transition-all cursor-pointer"
+                          onClick={() => {
+                            setActiveTab("Manage Stock");
+                            setInventorySearch(item.name);
+                          }}
+                          className="flex items-center justify-between group p-6 -mx-4 rounded-[30px] hover:bg-[#F9F6F2] transition-all cursor-pointer group/item"
                         >
                            <div className="flex items-center gap-8">
-                              <div className="w-14 h-14 rounded-full bg-[#F9F6F2] group-hover:bg-[#1A1A1A] group-hover:text-white flex items-center justify-center font-serif font-black text-[#1A1A1A] text-xl transition-all shadow-sm">
+                              <div className="w-14 h-14 rounded-full bg-[#F9F6F2] group-hover:bg-[#1A1A1A] group-hover:text-white flex items-center justify-center font-serif font-black text-[#1A1A1A] text-xl transition-all shadow-sm group-hover/item:scale-110">
                                 {item.name.charAt(0)}
                               </div>
                               <p className="text-[18px] font-black text-[#1A1A1A]">Published: <span className="font-serif italic text-black/50">"{item.name}"</span></p>
@@ -847,19 +934,29 @@ const AdminDashboard = () => {
                   </div>
                 </div>
                 <div className="space-y-10">
-                  <div className="bg-[#310101] rounded-[55px] p-12 shadow-2xl border border-white/5">
-                    <h5 className="text-[14px] font-black text-[#E5D5C5]/60 uppercase tracking-[0.4em] mb-10">Asset Index</h5>
-                    <div className="space-y-6">
-                      {allCategories.slice(0, 5).map((cat, i) => {
-                        const count = inventory.filter(p => p.category.toLowerCase() === cat.toLowerCase()).length;
-                        const percent = inventory.length > 0 ? (count / inventory.length) * 100 : 10;
+                  <div className="bg-[#F9F6F2] rounded-[55px] p-12 shadow-sm border border-[#310101]/5">
+                    <h5 className="text-[14px] font-black text-[#B0843D] uppercase tracking-[0.4em] mb-12">Asset Index</h5>
+                    <div className="space-y-8 max-h-[400px] overflow-y-auto pr-4 custom-scrollbar">
+                      {allCategories.map((cat, i) => {
+                        let count = 0;
+                        const targetCat = cat.trim().toUpperCase();
+                        
+                        if (targetCat === "OUR BESTSELLER") {
+                          count = allInventory.filter(p => p.isBestseller === true).length;
+                        } else if (targetCat === "NEW ARRIVAL") {
+                          count = allInventory.filter(p => p.isNew === true).length;
+                        } else {
+                          count = allInventory.filter(p => (p.category || "").trim().toUpperCase() === targetCat).length;
+                        }
+                        
+                        const percent = allInventory.length > 0 ? (count / allInventory.length) * 100 : 0;
                         return (
-                          <div key={i} className="space-y-3">
-                            <div className="flex justify-between items-center text-[14px] font-black uppercase text-white tracking-widest opacity-60">
+                          <div key={i} className="space-y-4">
+                            <div className="flex justify-between items-center text-[15px] font-black uppercase text-[#310101] tracking-widest opacity-80">
                                <span>{cat}</span><span>{count} ITEMS</span>
                             </div>
-                            <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
-                               <motion.div initial={{ width: 0 }} animate={{ width: `${percent}%` }} className="h-full bg-[#B0843D]" />
+                            <div className="h-2 w-full bg-[#310101]/5 rounded-full overflow-hidden">
+                               <motion.div initial={{ width: 0 }} animate={{ width: `${Math.max(percent, 2)}%` }} className="h-full bg-gradient-to-r from-[#310101] to-[#B0843D]" />
                             </div>
                           </div>
                         );
@@ -922,7 +1019,7 @@ const AdminDashboard = () => {
                       {(item.startDate || item.endDate) && (
                          <div className="pt-4 flex items-center gap-2 text-[14px] font-black uppercase tracking-widest text-[#B0843D]">
                             <Calendar className="w-3 h-3" />
-                            <span>{item.startDate || "Ongoing"} — {item.endDate || "No Expiry"}</span>
+                            <span>{item.startDate || "Ongoing"} â€” {item.endDate || "No Expiry"}</span>
                          </div>
                       )}
                     </div>
@@ -1065,7 +1162,7 @@ const AdminDashboard = () => {
 
                       <div className="space-y-1">
                         <h3 className="font-sans font-medium text-[#C29D59] text-[18px] tracking-normal leading-tight line-clamp-2">{product.name}</h3>
-                        <p className="text-[14px] font-black text-black/30 uppercase tracking-[0.2em]">{product.category || "Uncategorized"} {product.subCategory && `— ${product.subCategory}`}</p>
+                        <p className="text-[14px] font-black text-black/30 uppercase tracking-[0.2em]">{product.category || "Uncategorized"} {product.subCategory && `â€” ${product.subCategory}`}</p>
                       </div>
                       
                       <div className="space-y-6">
@@ -1075,7 +1172,7 @@ const AdminDashboard = () => {
                                 {product.discountPrice ? (
                                   <>
                                     <span className="font-sans text-[24px] font-bold text-[#111] leading-none">
-                                      ₹{parseInt(product.discountPrice.replace(/[^\d]/g, "")).toLocaleString()}
+                                      â‚¹{parseInt(product.discountPrice.replace(/[^\d]/g, "")).toLocaleString()}
                                     </span>
                                     <span className="text-[#747e8e] line-through text-[15px] font-medium font-sans">
                                       {product.price}
@@ -1242,7 +1339,7 @@ const AdminDashboard = () => {
                            </div>
                            <div className="space-y-1">
                               <p className="text-[14px] font-black uppercase opacity-20 tracking-widest">Total Spend</p>
-                              <p className="text-2xl font-black text-green-600">₹{totalSpent.toLocaleString()}</p>
+                              <p className="text-2xl font-black text-green-600">â‚¹{totalSpent.toLocaleString()}</p>
                            </div>
                         </div>
                       </div>
@@ -1393,11 +1490,13 @@ const AdminDashboard = () => {
                   className="w-full bg-white p-8 pl-20 rounded-[40px] text-xl font-bold font-sans outline-none shadow-sm focus:shadow-xl transition-all border border-gray-100"
                 />
               </div>
-              <div className="bg-white rounded-[55px] shadow-sm border border-gray-100 overflow-hidden divide-y">
+                <div className="bg-white rounded-[55px] shadow-sm border border-gray-100 overflow-hidden divide-y">
                 {filteredRequests.map((item) => (
-                  <div key={item.id} className="p-12 flex flex-col lg:flex-row items-center justify-between gap-12 hover:bg-gray-50/50 transition-colors">
+                  <div key={item.id} className={`p-12 flex flex-col lg:flex-row items-center justify-between gap-12 hover:bg-gray-50/50 transition-all duration-300 ${processingRequestId === item.id ? "opacity-40 pointer-events-none" : ""}`}>
                     <div className="flex items-center gap-10">
-                      <div className="w-28 h-28 rounded-[40px] bg-black text-[#E5D5C5] flex items-center justify-center font-serif text-5xl font-bold">{item.name?.charAt(0) || "?"}</div>
+                      <div className="w-28 h-28 rounded-[40px] bg-black text-[#E5D5C5] flex items-center justify-center font-serif text-5xl font-bold">
+                        {processingRequestId === item.id ? <Loader2 className="w-10 h-10 animate-spin" /> : (item.name?.charAt(0) || "?")}
+                      </div>
                       <div>
                         <h5 className="text-5xl font-serif font-black text-black tracking-tighter italic">{item.name}</h5>
                         <p className="text-[15px] font-black text-black opacity-30">{item.email}</p>
@@ -1405,8 +1504,20 @@ const AdminDashboard = () => {
                       </div>
                     </div>
                     <div className="flex gap-4">
-                      <button onClick={() => handleApproveReq(item.id, item.uid, item.name)} className="bg-black text-white px-12 py-6 rounded-[30px] font-black uppercase text-[14px]">Approve Access</button>
-                      <button onClick={() => handleDenyReq(item.id, item.name)} className="bg-white border text-black px-12 py-6 rounded-[30px] font-black uppercase hover:bg-red-50 text-[14px]">Deny</button>
+                      <button 
+                         disabled={!!processingRequestId}
+                         onClick={() => handleApproveReq(item.id, item.uid, item.name)} 
+                         className="bg-black text-white px-12 py-6 rounded-[30px] font-black uppercase text-[14px] disabled:opacity-50 disabled:cursor-not-allowed hover:scale-[1.02] active:scale-[0.98] transition-transform"
+                      >
+                         {processingRequestId === item.id ? "Processing..." : "Approve Access"}
+                      </button>
+                      <button 
+                         disabled={!!processingRequestId}
+                         onClick={() => handleDenyReq(item.id, item.name)} 
+                         className="bg-white border text-black px-12 py-6 rounded-[30px] font-black uppercase hover:bg-red-50 text-[14px] disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                         {processingRequestId === item.id ? "..." : "Deny"}
+                      </button>
                     </div>
                   </div>
                 ))}
@@ -1508,7 +1619,7 @@ const AdminDashboard = () => {
                       </select>
                    </div>
                   <div className="space-y-4">
-                     <label className="text-[15px] font-black uppercase text-[#B0843D]">Retail Price (₹)</label>
+                     <label className="text-[15px] font-black uppercase text-[#B0843D]">Retail Price (â‚¹)</label>
                      <input type="number" required placeholder="e.g. 2999" value={newProduct.price} onChange={e => setNewProduct({...newProduct, price: e.target.value})} className="w-full p-6 bg-gray-50 rounded-[25px] font-bold border-none outline-none focus:ring-4 focus:ring-[#B0843D]/5" />
                   </div>
                   <div className="space-y-4">
@@ -1579,12 +1690,12 @@ const AdminDashboard = () => {
                         <div className="grid grid-cols-2 gap-6">
                            <div className="space-y-3">
                               <label className="text-[14px] font-black uppercase text-[#B0843D] tracking-widest">Base Currency</label>
-                              <select value={storeSettings.currency || "INR (₹)"} onChange={e => setStoreSettings({...storeSettings, currency: e.target.value})} className="w-full p-6 bg-gray-50 rounded-3xl font-bold outline-none focus:ring-4 focus:ring-[#B0843D]/10 transition-all border-none appearance-none">
-                                 <option>INR (₹)</option>
+                              <select value={storeSettings.currency || "INR (â‚¹)"} onChange={e => setStoreSettings({...storeSettings, currency: e.target.value})} className="w-full p-6 bg-gray-50 rounded-3xl font-bold outline-none focus:ring-4 focus:ring-[#B0843D]/10 transition-all border-none appearance-none">
+                                 <option>INR (â‚¹)</option>
                                  <option>USD ($)</option>
-                                 <option>AED (د.إ)</option>
-                                 <option>GBP (£)</option>
-                                 <option>EUR (€)</option>
+                                 <option>AED (Ø¯.Ø¥)</option>
+                                 <option>GBP (Â£)</option>
+                                 <option>EUR (â‚¬)</option>
                               </select>
                            </div>
                            <div className="space-y-3">
@@ -1968,3 +2079,4 @@ const AdminDashboard = () => {
 };
 
 export default AdminDashboard;
+

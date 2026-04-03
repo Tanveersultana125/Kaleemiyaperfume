@@ -24,13 +24,13 @@ const SplashScreen = ({ onComplete }: { onComplete: () => void }) => {
               opacity: [0.2, 0.4, 0.2]
             }}
             transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
-            className="absolute inset-[-40px] bg-primary/20 blur-[40px] rounded-full"
+            className="absolute inset-0 bg-primary/20 blur-[20px] rounded-[10%]"
           />
           
           <img 
             src="/logo.png" 
             alt="Kaleemiya Logo" 
-            className="h-28 md:h-40 w-auto object-contain relative z-10"
+            className="h-32 md:h-40 xl:h-48 w-auto object-contain relative z-10 drop-shadow-2xl brightness-110" 
           />
         </motion.div>
 

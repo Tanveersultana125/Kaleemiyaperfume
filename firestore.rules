@@ -1,6 +1,7 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    
     // Helper functions
     function isSignedIn() {
       return request.auth != null;
@@ -16,9 +17,9 @@ service cloud.firestore {
     
     function isWhitelistedSuperAdmin() {
       return isSignedIn() && (
-        request.auth.token.email.toLower() == 'kaleemiya.perfumes@gmail.com' || 
-        request.auth.token.email.toLower() == 'tanveersultna84@gmail.com' ||
-        request.auth.token.email.toLower() == 'tanveersultana84@gmail.com'
+        request.auth.token.email.toLowerCase() == 'kaleemiya.perfumes@gmail.com' || 
+        request.auth.token.email.toLowerCase() == 'tanveersultna84@gmail.com' ||
+        request.auth.token.email.toLowerCase() == 'tanveersultana84@gmail.com'
       );
     }
     
@@ -30,47 +31,72 @@ service cloud.firestore {
       return isWhitelistedSuperAdmin() || hasRole('admin') || hasRole('super_admin');
     }
 
-    // Users Collection
+    // --- Users Collection ---
     match /users/{userId} {
-      allow read: if isSignedIn();
+      // Users can only read their own data; Super Admin can read all
+      allow read: if isSignedIn() && (request.auth.uid == userId || isSuperAdmin());
+      
+      // Users can only create their own document on first sign-in
       allow create: if isSignedIn() && request.auth.uid == userId;
-      // Only Super Admin can update roles
-      allow update: if isSuperAdmin() || (request.auth.uid == userId && request.resource.data.role == resource.data.role);
-      // Safeguard: Never delete a super admin or anyone on the whitelist
+      
+      // Crucial: Only Super Admin can update the 'role' field
+      // Regular users can update their profile (name, etc) BUT NOT their role
+      allow update: if isSignedIn() && (
+        isSuperAdmin() || 
+        (request.auth.uid == userId && request.resource.data.role == resource.data.role)
+      );
+      
+      // Only Super Admin can delete, with safety checks for whitelisted accounts
       allow delete: if isSuperAdmin() && 
                     resource.data.role != 'super_admin' && 
-                    resource.data.email.toLower() != 'kaleemiya.perfumes@gmail.com' &&
-                    resource.data.email.toLower() != 'tanveersultna84@gmail.com' &&
-                    resource.data.email.toLower() != 'tanveersultana84@gmail.com';
+                    !['kaleemiya.perfumes@gmail.com', 'tanveersultna84@gmail.com', 'tanveersultana84@gmail.com'].contains(resource.data.email.toLowerCase());
     }
 
-    // Admin Requests Collection
-    match /adminRequests/{requestId} {
-      allow read: if isSuperAdmin() || (isSignedIn() && resource.data.uid == request.auth.uid);
-      allow create: if isSignedIn() && request.resource.data.uid == request.auth.uid && request.resource.data.status == 'pending';
-      allow update: if isSuperAdmin();
+    // --- Admin Requests Collection ---
+    match /adminRequests/{userId} {
+      // Only Super Admin can read all requests; Users can only read their own
+      allow read: if isSuperAdmin() || (isSignedIn() && userId == request.auth.uid);
+      
+      // Strict Creation Validation:
+      // 1. Must be signed in
+      // 2. Document ID (userId) MUST match your authenticated UID
+      // 3. User must not be already an admin
+      // 4. Status must be 'pending'
+      allow create: if isSignedIn() 
+        && userId == request.auth.uid
+        && request.resource.data.uid == request.auth.uid 
+        && request.resource.data.email == request.auth.token.email
+        && request.resource.data.status == 'pending'
+        && getUserData().role != 'admin'
+        && getUserData().role != 'super_admin';
+
+      // Update validation:
+      // Only Super Admin can approve/reject. 
+      // Users can only "resubmit" a rejected request by changing it back to pending.
+      allow update: if isSuperAdmin() || (
+        isSignedIn() && userId == request.auth.uid && resource.data.status == 'rejected' && request.resource.data.status == 'pending'
+      );
+
       allow delete: if isSuperAdmin();
     }
 
-    // Products (Inventory) Collection
+    // --- Products & Metadata ---
     match /products/{productId} {
-      allow read: if true; // Everyone can see products
+      allow read: if true;
       allow write: if isAdmin();
     }
     
-    // Metadata (Categories)
     match /metadata/{docId} {
       allow read: if true;
       allow write: if isAdmin();
     }
 
-    // News Desk Collection
     match /news/{newsId} {
       allow read: if true;
       allow write: if isAdmin();
     }
     
-    // Default deny
+    // Default Deny
     match /{document=**} {
       allow read, write: if isSuperAdmin();
     }

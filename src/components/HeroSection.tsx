@@ -21,16 +21,7 @@ const HeroSection = () => {
       {/* Content */}
       <div className="relative z-10 max-w-full w-full mx-auto px-4 md:px-10 lg:px-16 pt-32 pb-20 min-h-[100vh] flex flex-col justify-center">
         <div className="max-w-xl">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1, delay: 0.5 }}
-            className="mb-4"
-          >
-            <span className="text-white/95 text-[14px] md:text-sm font-sans tracking-[0.4em] uppercase font-bold">
-              Kaleemiya Perfumes
-            </span>
-          </motion.div>
+          {/* Logo completely removed from Hero Section for true minimalist aesthetic. */}
 
           <motion.h2
             initial={{ opacity: 0, y: 40 }}

@@ -42,68 +42,78 @@ const CartDrawer = () => {
           )}
         </button>
       </SheetTrigger>
-      <SheetContent className="w-full sm:max-w-[320px] flex flex-col p-0 border-l border-white/5 bg-[#310101] text-[#F9F6F0]">
-        <SheetHeader className="px-5 py-4 border-b border-white/5">
-          <SheetTitle className="font-serif text-base text-center text-[#F9F6F0] flex items-center justify-center gap-3">
-             ({totalCount} items)
+      <SheetContent className="w-full sm:max-w-[400px] flex flex-col p-0 border-l border-[#310101]/5 bg-[#FDFCFB] text-[#310101] shadow-2xl">
+        <SheetHeader className="px-8 py-10 border-b border-[#310101]/5 bg-[#F9F6F2]">
+          <SheetTitle className="font-serif text-2xl text-center text-[#310101] tracking-tight">
+             My Boutique Bag
           </SheetTitle>
+          <p className="text-[11px] uppercase tracking-[0.3em] font-black text-center text-[#B0843D]/60 mt-1">
+            {totalCount} ARTISAN SELECTIONS
+          </p>
         </SheetHeader>
 
         {cart.length === 0 ? (
-          <div className="flex-1 flex flex-col items-center justify-center p-6 text-center space-y-4">
-            <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center">
-              <ShoppingBag className="w-6 h-6 text-[#F9F6F0]/40" />
+          <div className="flex-1 flex flex-col items-center justify-center p-12 text-center space-y-8">
+            <div className="w-20 h-20 rounded-full bg-[#F9F6F2] flex items-center justify-center shadow-inner">
+              <ShoppingBag className="w-8 h-8 text-[#B0843D]/40" />
             </div>
-            <div className="space-y-1">
-              <h3 className="font-serif text-base text-[#F9F6F0]">Your cart is empty</h3>
-              <p className="text-[14px] text-[#F9F6F0]/60 max-w-[160px]">
-                Explore our collections and find your signature scent.
+            <div className="space-y-3">
+              <h3 className="font-serif text-2xl text-[#310101]">Your bag is whisper quiet</h3>
+              <p className="text-sm font-sans italic text-[#310101]/60 max-w-[220px] mx-auto leading-relaxed">
+                Our master perfumers are waiting to fill your world with essence.
               </p>
             </div>
+            <Button 
+              variant="outline" 
+              className="mt-4 rounded-full border-[#310101]/10 px-8 py-6 font-black uppercase tracking-widest text-[12px] hover:bg-[#310101] hover:text-white transition-all shadow-sm"
+              onClick={() => { /* Close drawer */ }}
+            >
+              Continue Exploration
+            </Button>
           </div>
         ) : (
           <>
-            <ScrollArea className="flex-1 px-4">
-              <div className="py-4 space-y-4">
+            <ScrollArea className="flex-1 px-8">
+              <div className="py-10 space-y-10">
                 {cart.map((item) => (
-                  <div key={item.id} className="flex gap-3 group relative">
-                    <div className="w-16 h-20 bg-white/5 overflow-hidden shrink-0 border border-white/5">
+                  <div key={item.id} className="flex gap-6 group relative">
+                    <div className="w-24 h-32 bg-[#F9F6F2] overflow-hidden shrink-0 border border-[#310101]/5 shadow-sm rounded-xl">
                       <img 
                         src={item.image} 
                         alt={item.name} 
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                       />
                     </div>
-                    <div className="flex-1 flex flex-col justify-between py-0.5">
-                      <div className="space-y-0.5">
+                    <div className="flex-1 flex flex-col justify-between py-1">
+                      <div className="space-y-1">
                         <div className="flex justify-between items-start">
-                          <h4 className="font-serif text-[15px] text-[#F9F6F0]/90 leading-tight">
+                          <h4 className="font-serif text-xl text-[#310101] leading-tight group-hover:text-black transition-colors">
                             {item.name}
                           </h4>
                           <button 
                             onClick={() => removeFromCart(item.id)}
-                            className="text-[#F9F6F0]/40 hover:text-white transition-colors"
+                            className="text-[#310101]/20 hover:text-red-500 transition-all hover:rotate-90"
                           >
-                            <X className="w-3 h-3" />
+                            <X className="w-4 h-4" />
                           </button>
                         </div>
-                        <p className="text-sm font-sans font-medium text-[#C5A02E]">{item.price}</p>
+                        <p className="text-[15px] font-sans font-bold text-[#B0843D] tracking-wide">{item.price}</p>
                       </div>
                       
-                      <div className="flex items-center">
-                        <div className="flex items-center border border-white/10 rounded-none overflow-hidden h-6">
+                      <div className="flex items-center mt-4">
+                        <div className="flex items-center bg-[#F9F6F2] rounded-full px-4 py-2 border border-[#310101]/5 shadow-inner">
                           <button 
                             onClick={() => updateQuantity(item.id, -1)}
-                            className="px-1.5 hover:bg-white/10 transition-colors border-r border-white/10"
+                            className="text-[#310101]/40 hover:text-[#310101] transition-colors"
                           >
-                            <Minus className="w-2 h-2" />
+                            <Minus className="w-3 h-3" />
                           </button>
-                          <span className="px-2 text-[14px] font-medium w-6 text-center">{item.quantity}</span>
+                          <span className="px-4 text-[14px] font-black w-10 text-center text-[#310101]">{item.quantity}</span>
                           <button 
                             onClick={() => updateQuantity(item.id, 1)}
-                            className="px-1.5 hover:bg-white/10 transition-colors border-l border-white/10"
+                            className="text-[#310101]/40 hover:text-[#310101] transition-colors"
                           >
-                            <Plus className="w-2 h-2" />
+                            <Plus className="w-3 h-3" />
                           </button>
                         </div>
                       </div>
@@ -113,34 +123,43 @@ const CartDrawer = () => {
               </div>
             </ScrollArea>
 
-            <div className="p-5 bg-white/[0.02] space-y-3 border-t border-white/10">
-              <div className="space-y-3">
-                <div className="flex justify-between items-center">
-                  <span className="text-[14px] text-[#F9F6F0] font-bold uppercase tracking-[0.15em]">SUBTOTAL</span>
-                  <span className="text-sm font-medium text-[#F9F6F0]">₹{totalPrice.toLocaleString()}</span>
+            <div className="p-8 bg-[#F9F6F2] border-t border-[#310101]/5 space-y-6">
+              <div className="space-y-4">
+                <div className="flex justify-between items-center px-2">
+                  <span className="text-[13px] text-[#310101]/60 font-black uppercase tracking-[0.2em] mb-0.5">SUBTOTAL</span>
+                  <span className="text-lg font-serif text-[#310101]">₹{totalPrice.toLocaleString()}</span>
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-[14px] text-[#F9F6F0] font-bold uppercase tracking-[0.15em]">SHIPPING</span>
-                  <span className="text-[11px] text-[#F9F6F0]/50 italic">Calculated at checkout</span>
+                <div className="flex justify-between items-center px-2">
+                  <span className="text-[13px] text-[#310101]/60 font-black uppercase tracking-[0.2em]">SHIPPING</span>
+                  <span className="text-[11px] text-green-600 font-bold uppercase tracking-widest">Complimentary</span>
                 </div>
-                <Separator className="my-1 bg-white/5" />
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-serif text-[#F9F6F0] uppercase tracking-widest">TOTAL</span>
-                  <span className="text-base font-serif text-[#F5C518]">₹{totalPrice.toLocaleString()}</span>
+                <div className="h-[1px] w-full bg-[#310101]/5" />
+                <div className="flex justify-between items-center px-2">
+                  <span className="text-[15px] font-serif text-[#310101] uppercase tracking-[0.2em] font-black">TOTAL</span>
+                  <span className="text-2xl font-serif font-black text-[#B0843D]">₹{totalPrice.toLocaleString()}</span>
                 </div>
               </div>
               
-              <div className="grid pt-2">
+              <div className="space-y-4">
                 <Button 
                   onClick={handleCheckout}
-                  className="w-full h-12 bg-transparent border border-[#F9F6F0]/20 hover:bg-white/5 text-[#F9F6F0] rounded-none font-sans uppercase tracking-[0.2em] text-[14px] flex items-center justify-center gap-2"
+                  className="w-full h-16 bg-[#310101] text-[#E5D5C5] rounded-full font-black uppercase tracking-[0.3em] text-[13px] flex items-center justify-center gap-3 shadow-2xl hover:scale-[1.02] active:scale-95 transition-all"
                 >
-                  PLACE ORDER
-                  <ArrowRight className="w-3 h-3" />
+                  COMPLETE EXPLORATION
+                  <ArrowRight className="w-4 h-4" />
                 </Button>
-                <p className="text-[11px] mt-3 text-center text-[#F9F6F0]/30 uppercase tracking-widest">
-                  Secure checkout powered by Razorpay
-                </p>
+                <div className="flex flex-col items-center gap-1.5 opacity-40">
+                   <p className="text-[10px] text-center text-[#310101] uppercase tracking-[0.3em] font-black">
+                     Secure Gateway Protected
+                   </p>
+                   <div className="flex items-center gap-2 grayscale brightness-50">
+                      <span className="text-[9px] font-sans font-bold">RAZORPAY</span>
+                      <span className="w-1 h-1 bg-black rounded-full" />
+                      <span className="text-[9px] font-sans font-bold">VISA</span>
+                      <span className="w-1 h-1 bg-black rounded-full" />
+                      <span className="text-[9px] font-sans font-bold">MASTERCARD</span>
+                   </div>
+                </div>
               </div>
             </div>
           </>

@@ -88,7 +88,7 @@ const Footer = () => {
               <img 
                 src="/logo.png" 
                 alt="Kaleemiya Logo" 
-                className="h-14 w-auto object-contain hover:scale-110 transition-transform duration-500 sepia-[1.2] saturate-[25] hue-rotate-[20deg] brightness-[0.95]"
+                className="h-16 w-auto object-contain transition-transform duration-500 hover:scale-105 drop-shadow-xl" 
               />
               <p className="text-[#F9F6F0]/60 text-sm font-sans font-medium">
                 © 2026 Kaleemiya Perfumes. All rights reserved.

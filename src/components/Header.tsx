@@ -95,8 +95,7 @@ const Header = () => {
             <img 
               src="/logo.png" 
               alt="Kaleemiya Perfumes Logo" 
-              className="h-10 md:h-12 lg:h-14 w-auto object-contain transition-all duration-300"
-              style={{ filter: "brightness(0)" }}
+              className="h-[72px] my-[-16px] md:h-[96px] md:my-[-24px] lg:h-[104px] lg:my-[-24px] w-auto object-contain transition-all duration-700 hover:scale-105 drop-shadow-[0_0_15px_rgba(0,0,0,0.05)]" 
             />
           </Link>
 
