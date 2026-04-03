@@ -95,7 +95,7 @@ const Header = () => {
             <img 
               src="/logo.png" 
               alt="Kaleemiya Perfumes Logo" 
-              className="h-[72px] my-[-16px] md:h-[96px] md:my-[-24px] lg:h-[104px] lg:my-[-24px] w-auto object-contain transition-all duration-700 hover:scale-105 drop-shadow-[0_0_15px_rgba(0,0,0,0.05)]" 
+              className="h-[60px] my-[-12px] md:h-[80px] md:my-[-16px] lg:h-[88px] lg:my-[-16px] w-auto object-contain transition-all duration-700 hover:scale-105 drop-shadow-[0_0_15px_rgba(0,0,0,0.05)]" 
             />
           </Link>
 
@@ -167,9 +167,9 @@ const Header = () => {
               onClick={() => setAccountOpen(true)}
               className="text-black hover:text-black/70 transition-colors hidden sm:flex items-center gap-2 group"
             >
-              <User className="w-4 h-4 md:w-4.5 md:h-4.5" />
-              <span className="text-[14px] lg:text-[15px] uppercase tracking-widest text-black group-hover:text-black/70 font-bold whitespace-nowrap">
-                {user ? user.displayName?.split(" ")[0] : "Account"}
+              <User className="w-4 h-4 md:w-5 md:h-5 text-black/80" />
+              <span className="text-[13px] lg:text-[14px] uppercase tracking-[0.2em] text-black group-hover:text-black/70 font-bold whitespace-nowrap">
+                {user ? user.displayName : "Account"}
               </span>
             </button>
             <Search className="lg:hidden w-5 h-5 text-black" onClick={() => setSearchOpen(!searchOpen)} />
@@ -193,55 +193,88 @@ const Header = () => {
         onClose={() => setMegaMenuOpen(false)}
       />
 
-      {/* Mobile menu */}
+      {/* Mobile Drawer Overlay & Menu */}
       <AnimatePresence>
         {mobileOpen && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-            className="lg:hidden bg-white/98 backdrop-blur-lg border-t border-gray-100 overflow-hidden"
-          >
-            <nav className="flex flex-col items-center py-10 gap-8">
-              {navLinks.map((link, i) => (
-                <Link
-                  key={link.name}
-                  to={link.href}
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.3 }}
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[998] xl:hidden"
+              onClick={() => setMobileOpen(false)}
+            />
+            <motion.div
+              initial={{ x: "100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "100%" }}
+              transition={{ type: "tween", duration: 0.4, ease: [0.25, 1, 0.5, 1] }}
+              className="fixed top-0 right-0 h-[100dvh] w-[85vw] max-w-[400px] bg-[#FDFCFB] z-[999] shadow-[-20px_0_40px_rgba(0,0,0,0.2)] flex flex-col xl:hidden overflow-y-auto"
+            >
+              {/* Drawer Header */}
+              <div className="flex items-center justify-between p-6 pt-10 border-b border-black/5 bg-white">
+                <span className="font-serif text-2xl text-black">Menu</span>
+                <button 
                   onClick={() => setMobileOpen(false)}
-                  className="w-full text-center"
+                  className="p-2 -mr-2 text-black/60 hover:text-black transition-colors rounded-full hover:bg-black/5"
                 >
-                  <motion.div
-                    initial={{ opacity: 0, y: 15 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.05, duration: 0.5, ease: "easeOut" }}
-                    className="text-black text-base font-sans tracking-[0.25em] uppercase py-3 hover:text-black/70 active:text-black transition-all"
+                  <X className="w-7 h-7" />
+                </button>
+              </div>
+
+              {/* Drawer Content */}
+              <nav className="flex-1 px-6 py-8 flex flex-col gap-6 bg-[#FDFCFB]">
+                {navLinks.map((link, i) => (
+                  <Link
+                    key={link.name}
+                    to={link.href}
+                    onClick={() => setMobileOpen(false)}
+                    className="group"
                   >
-                    {link.name}
-                  </motion.div>
-                </Link>
-              ))}
-              <motion.button
-                initial={{ opacity: 0, y: 15 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: navLinks.length * 0.05, duration: 0.5 }}
-                className="mt-4 px-8 py-4 border border-black/30 text-[14px] tracking-[0.3em] uppercase text-black font-bold hover:bg-black/5 active:bg-black/10 transition-all"
-                onClick={() => {
-                  setMobileOpen(false);
-                  setMegaMenuOpen(true);
-                }}
-              >
-                All Collections
-              </motion.button>
-              
-              <button 
-                onClick={() => { setMobileOpen(false); setAccountOpen(true); }}
-                className="flex items-center gap-2 text-black/60 font-bold uppercase tracking-widest text-[13px] border-t border-gray-100 w-full justify-center pt-8"
-              >
-                 <User size={14} /> {user ? "View My Profile" : "Sign In / Join"}
-              </button>
-            </nav>
-          </motion.div>
+                    <motion.div
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.1 + i * 0.05, duration: 0.4, ease: "easeOut" }}
+                      className="text-black text-lg font-medium font-sans tracking-[0.1em] uppercase py-3 border-b border-black/5 flex items-center justify-between group-hover:text-[#B0843D] transition-colors"
+                    >
+                      {link.name}
+                      <span className="opacity-0 -translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 transition-all text-[#B0843D]">→</span>
+                    </motion.div>
+                  </Link>
+                ))}
+                
+                <motion.div
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.1 + navLinks.length * 0.05, duration: 0.4 }}
+                  className="pt-4"
+                >
+                  <button
+                    className="w-full py-4 bg-black text-white text-[15px] tracking-[0.2em] uppercase font-bold hover:bg-black/80 active:scale-[0.98] transition-all shadow-xl shadow-black/10 rounded-sm"
+                    onClick={() => {
+                      setMobileOpen(false);
+                      setMegaMenuOpen(true);
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                  >
+                    All Collections
+                  </button>
+                </motion.div>
+              </nav>
+
+              {/* Drawer Footer */}
+              <div className="p-6 bg-[#F9F6F2] mt-auto border-t border-black/10">
+                <button 
+                  onClick={() => { setMobileOpen(false); setAccountOpen(true); }}
+                  className="flex items-center justify-center gap-3 w-full py-4 text-black text-sm font-bold uppercase tracking-widest hover:text-[#B0843D] transition-colors bg-white rounded-full shadow-sm"
+                >
+                  <User size={18} /> 
+                  {user ? "View Profile" : "Sign In / Register"}
+                </button>
+              </div>
+            </motion.div>
+          </>
         )}
       </AnimatePresence>
     </header>

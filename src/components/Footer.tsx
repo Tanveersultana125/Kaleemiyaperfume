@@ -38,9 +38,9 @@ const Footer = () => {
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
         transition={{ duration: 0.6 }}
-        className="bg-[#F9F6F0] max-w-full mx-auto px-4 md:px-10 lg:px-16 py-16 text-center border-b border-[#310101]/10"
+        className="bg-[#F9F6F0] max-w-full mx-auto section-padding py-16 text-center border-b border-[#310101]/10"
       >
-        <h3 className="font-serif text-2xl md:text-3xl mb-3 text-[#310101]">Join the Kaleemiya World</h3>
+        <h3 className="font-serif text-xl sm:text-2xl md:text-3xl mb-3 text-[#310101]">Join the Kaleemiya World</h3>
         <p className="text-[#310101] font-sans text-sm mb-8 max-w-md mx-auto">
           Exclusive launches, artisan stories, and offers — delivered with care.
         </p>
@@ -58,7 +58,7 @@ const Footer = () => {
 
       {/* Links & Bottom - Light Section (#F9F6F0) */}
       <div className="bg-[#F9F6F0] text-[#310101]">
-        <div className="max-w-full mx-auto px-4 md:px-10 lg:px-16 py-10 grid grid-cols-2 md:grid-cols-4 gap-6 text-center md:text-left">
+        <div className="max-w-full mx-auto section-padding py-10 grid grid-cols-2 md:grid-cols-4 gap-8 text-center md:text-left">
           {Object.entries(footerLinks).map(([title, links]) => (
             <div key={title}>
               <h4 className="font-serif text-sm md:text-base text-[#310101] mb-3 tracking-wide font-semibold">{title}</h4>
@@ -83,7 +83,7 @@ const Footer = () => {
 
         {/* Bottom Area - Dark maroon section (#310101) */}
         <div className="bg-[#310101] text-[#F9F6F0]">
-          <div className="max-w-full mx-auto px-4 md:px-10 lg:px-16 py-8 border-t border-[#F9F6F0]/10 flex flex-col md:flex-row items-center justify-between gap-6">
+          <div className="max-w-full mx-auto section-padding py-8 border-t border-[#F9F6F0]/10 flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="flex flex-col items-center md:items-start gap-4">
               <img 
                 src="/logo.png" 

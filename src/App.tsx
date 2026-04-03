@@ -29,6 +29,8 @@ import FAQ from "./pages/FAQ.tsx";
 import TrackOrder from "./pages/TrackOrder.tsx";
 import ShippingInfo from "./pages/ShippingInfo.tsx";
 import Returns from "./pages/Returns.tsx";
+import PWAInstallPrompt from "./components/PWAInstallPrompt.tsx";
+import OfflineMessage from "./components/OfflineMessage.tsx";
 
 const queryClient = new QueryClient();
 
@@ -80,6 +82,8 @@ const App = () => {
               <>
                 <Toaster />
                 <Sonner />
+                <PWAInstallPrompt />
+                <OfflineMessage />
                 <BrowserRouter 
                   future={{ 
                     v7_startTransition: true,

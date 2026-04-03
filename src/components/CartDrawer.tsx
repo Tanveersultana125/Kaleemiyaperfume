@@ -97,7 +97,7 @@ const CartDrawer = () => {
                             <X className="w-4 h-4" />
                           </button>
                         </div>
-                        <p className="text-[15px] font-sans font-bold text-[#B0843D] tracking-wide">{item.price}</p>
+                        <p className="text-[15px] font-sans font-bold text-[#B0843D] tracking-wide">{"\u20B9"}{parseInt(item.price.replace(/[^\d]/g, "")).toLocaleString()}</p>
                       </div>
                       
                       <div className="flex items-center mt-4">
@@ -127,7 +127,7 @@ const CartDrawer = () => {
               <div className="space-y-4">
                 <div className="flex justify-between items-center px-2">
                   <span className="text-[13px] text-[#310101]/60 font-black uppercase tracking-[0.2em] mb-0.5">SUBTOTAL</span>
-                  <span className="text-lg font-serif text-[#310101]">₹{totalPrice.toLocaleString()}</span>
+                  <span className="text-lg font-serif text-[#310101]">{"\u20B9"}{totalPrice.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between items-center px-2">
                   <span className="text-[13px] text-[#310101]/60 font-black uppercase tracking-[0.2em]">SHIPPING</span>
@@ -136,7 +136,7 @@ const CartDrawer = () => {
                 <div className="h-[1px] w-full bg-[#310101]/5" />
                 <div className="flex justify-between items-center px-2">
                   <span className="text-[15px] font-serif text-[#310101] uppercase tracking-[0.2em] font-black">TOTAL</span>
-                  <span className="text-2xl font-serif font-black text-[#B0843D]">₹{totalPrice.toLocaleString()}</span>
+                  <span className="text-2xl font-serif font-black text-[#B0843D]">{"\u20B9"}{totalPrice.toLocaleString()}</span>
                 </div>
               </div>
               

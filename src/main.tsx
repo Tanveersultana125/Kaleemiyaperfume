@@ -1,11 +1,18 @@
 import { createRoot } from "react-dom/client";
+import { registerSW } from "virtual:pwa-register";
 import App from "./App.tsx";
 import "./index.css";
 
-// Check for a browser reload and reset to home for a fresh boutique start
-const nav = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
-if (nav && nav.type === 'reload' && window.location.pathname !== '/') {
-  window.location.replace('/');
-} else {
-  createRoot(document.getElementById("root")!).render(<App />);
-}
+// Register Service Worker for PWA
+registerSW({
+  onNeedRefresh() {
+    if (confirm("New content available. Reload?")) {
+      window.location.reload();
+    }
+  },
+  onOfflineReady() {
+    console.log("App ready for offline use");
+  },
+});
+
+createRoot(document.getElementById("root")!).render(<App />);

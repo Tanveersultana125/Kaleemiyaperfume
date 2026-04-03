@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useEffect } from "react";
 import { useProducts } from "@/hooks/useProducts";
 import RevenueVelocity from "@/components/RevenueVelocity";
@@ -126,7 +128,8 @@ const AdminDashboard = () => {
     stock: "50",
     section: "Main Store",
     subCategory: "Unisex",
-    isLive: true
+    isLive: true,
+    extraImages: ["", "", "", ""]
   });
   const [filterCategory, setFilterCategory] = useState("All");
   const [isUploading, setIsUploading] = useState(false);
@@ -164,6 +167,7 @@ const AdminDashboard = () => {
     targetSubCategory: "All",
     discountPercent: "" 
   });
+  const [allReviews, setAllReviews] = useState<any[]>([]);
 
   const [orders, setOrders] = useState([
     { 
@@ -172,9 +176,9 @@ const AdminDashboard = () => {
       items: ["Oud Al Malikah", "Majestic Rose"], 
       qty: "2 Items", 
       payment: "Paid", 
-      amount: "â‚¹5,999", 
+      amount: "₹5,999", 
       status: "In Transit", 
-      location: "Mumbai Central Hub â€” Sorting Center",
+      location: "Mumbai Central Hub — Sorting Center",
       history: [
         { time: "Yesterday, 10:00 AM", event: "Package arrived at Mumbai Hub" },
         { time: "Monday, 2:00 PM", event: "Dispatched from Warehouse" }
@@ -186,9 +190,9 @@ const AdminDashboard = () => {
       items: ["Majestic Rose"], 
       qty: "1 Item", 
       payment: "Paid", 
-      amount: "â‚¹3,450", 
+      amount: "₹3,450", 
       status: "Delivered", 
-      location: "Dubai Logistics Park â€” Out for Delivery",
+      location: "Dubai Logistics Park — Out for Delivery",
       history: [
         { time: "Today, 04:30 PM", event: "Package Delivered" },
         { time: "Today, 09:00 AM", event: "Out for Delivery" }
@@ -200,9 +204,9 @@ const AdminDashboard = () => {
       items: ["Royal Bakhoor", "Sultan Blend", "Arabic Oud"], 
       qty: "3 Items", 
       payment: "Pending", 
-      amount: "â‚¹2,800", 
+      amount: "₹2,800", 
       status: "Pending", 
-      location: "Warehouse â€” Awaiting Courier",
+      location: "Warehouse — Awaiting Courier",
       history: [
         { time: "Just Now", event: "Order Received & Verified" }
       ]
@@ -239,6 +243,22 @@ const AdminDashboard = () => {
         };
         setDoc(doc(db, "metadata", "categories"), { list: defaults, subs: defaultSubs });
       }
+    });
+    return () => unsub();
+  }, []);
+
+  // Real-time listener for all reviews
+  useEffect(() => {
+    const q = query(collection(db, "reviews"));
+    const unsub = onSnapshot(q, (snap) => {
+      const fetched = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      // Sort client-side to avoid index requirements
+      fetched.sort((a: any, b: any) => {
+        const dateA = a.createdAt?.toDate() || new Date(0);
+        const dateB = b.createdAt?.toDate() || new Date(0);
+        return dateB.getTime() - dateA.getTime();
+      });
+      setAllReviews(fetched);
     });
     return () => unsub();
   }, []);
@@ -305,7 +325,7 @@ const AdminDashboard = () => {
     return stored ? JSON.parse(stored) : {
       name: "Kaleemiya Perfumes",
       email: "contact@kaleemiya.com",
-      currency: "INR (â‚¹)",
+      currency: "INR (\u20B9)",
       maintenanceMode: false,
       accentColor: "#B0843D",
       publicLivePage: true,
@@ -341,13 +361,18 @@ const AdminDashboard = () => {
     "New Arrival",
     ...globalCategories.map(c => c.trim()),
     ...inventory.map(p => (p.category || "").trim())
-  ].map(c => c.charAt(0).toUpperCase() + c.slice(1).toLowerCase()))).filter(Boolean);
+  ])).filter(Boolean);
 
   const dynamicSubCategories: Record<string, string[]> = {};
   allCategories.forEach(cat => {
-    const savedSubs = subCategoriesConfig[cat] || [];
+    // Correct case-insensitive lookup
+    const matchingKey = Object.keys(subCategoriesConfig).find(
+      k => k.toLowerCase() === cat.toLowerCase()
+    );
+    const savedSubs = matchingKey ? subCategoriesConfig[matchingKey] : [];
+    
     const fromInventory = inventory
-      .filter(p => p.category?.toLowerCase() === cat.toLowerCase())
+      .filter(p => (p.category || "").toLowerCase() === cat.toLowerCase())
       .map(p => p.subCategory)
       .filter(Boolean);
     
@@ -396,6 +421,70 @@ const AdminDashboard = () => {
             }, { merge: true });
             toast.success(`Sub-category added to ${parentCat}!`);
           }
+        }
+        setPromptData(prev => ({ ...prev, isOpen: false }));
+      }
+    });
+  };
+
+  const handleEditCategory = (oldCat: string) => {
+    if (["Our Bestseller", "New Arrival"].includes(oldCat)) {
+      toast.error(`${oldCat} is a system category and cannot be edited.`);
+      return;
+    }
+    setPromptData({
+      isOpen: true,
+      title: `Rename Category "${oldCat}"`,
+      placeholder: "Enter new category name...",
+      value: oldCat,
+      onConfirm: async (val: string) => {
+        if (val.trim() && val.trim() !== oldCat) {
+          const formatted = val.trim().charAt(0).toUpperCase() + val.trim().slice(1);
+          if (globalCategories.includes(formatted)) {
+            toast.error("This category already exists.");
+            return;
+          }
+          const newGlobal = globalCategories.map(c => c === oldCat ? formatted : c);
+          const newSubs = { ...subCategoriesConfig };
+          if (newSubs[oldCat]) {
+            newSubs[formatted] = newSubs[oldCat];
+            delete newSubs[oldCat];
+          }
+          await setDoc(doc(db, "metadata", "categories"), {
+            list: newGlobal,
+            subs: newSubs
+          }, { merge: true });
+          toast.success(`Category renamed to "${formatted}".`);
+        }
+        setPromptData(prev => ({ ...prev, isOpen: false }));
+      }
+    });
+  };
+
+  const handleEditSubCategory = (parentCat: string, oldSub: string) => {
+    if (["General"].includes(oldSub)) {
+      toast.error(`"${oldSub}" is a system sub-category and cannot be edited.`);
+      return;
+    }
+    setPromptData({
+      isOpen: true,
+      title: `Rename Sub-category "${oldSub}"`,
+      placeholder: "Enter new sub-category name...",
+      value: oldSub,
+      onConfirm: async (val: string) => {
+        if (val.trim() && val.trim() !== oldSub) {
+          const formatted = val.trim().charAt(0).toUpperCase() + val.trim().slice(1);
+          const currentSubs = subCategoriesConfig[parentCat] || [];
+          if (currentSubs.includes(formatted)) {
+             toast.error(`"${formatted}" already exists in ${parentCat}.`);
+             return;
+          }
+          const updatedSubs = { ...subCategoriesConfig, [parentCat]: currentSubs.map(s => s === oldSub ? formatted : s) };
+          await setDoc(doc(db, "metadata", "categories"), {
+            list: globalCategories,
+            subs: updatedSubs
+          }, { merge: true });
+          toast.success(`Sub-category renamed to "${formatted}".`);
         }
         setPromptData(prev => ({ ...prev, isOpen: false }));
       }
@@ -552,22 +641,22 @@ const AdminDashboard = () => {
   };
 
   const StatCard = ({ title, value, icon: Icon, trend }: any) => (
-    <div className="bg-white p-10 rounded-[45px] shadow-sm border border-gray-100 hover:shadow-2xl transition-all duration-500 group relative overflow-hidden">
+    <div className="bg-white p-6 md:p-10 rounded-[35px] md:rounded-[45px] shadow-sm border border-gray-100 hover:shadow-2xl transition-all duration-500 group relative overflow-hidden">
       <div className="absolute top-0 right-0 w-32 h-32 bg-[#B0843D] opacity-0 group-hover:opacity-[0.05] rounded-full -mr-16 -mt-16 transition-all duration-700"></div>
-      <div className="flex justify-between items-start mb-8">
-        <div className="p-5 bg-[#F9F6F2] rounded-[24px] group-hover:bg-[#310101] group-hover:text-white transition-colors duration-500 border border-[#E5D5C5]/40 shadow-sm text-[#310101]">
-          <Icon className="w-8 h-8" />
+      <div className="flex justify-between items-start mb-6 md:mb-8">
+        <div className="p-4 md:p-5 bg-[#F9F6F2] rounded-[20px] md:rounded-[24px] group-hover:bg-[#310101] group-hover:text-white transition-colors duration-500 border border-[#E5D5C5]/40 shadow-sm text-[#310101]">
+          <Icon className="w-6 h-6 md:w-8 md:h-8" />
         </div>
         {trend && (
-          <div className="flex items-center gap-2 bg-green-50 px-4 py-2 rounded-full border border-green-100">
-            <TrendingUp className="w-4 h-4 text-green-600" />
-            <span className="text-[14px] font-black text-green-700 uppercase tracking-widest">{trend}</span>
+          <div className="flex items-center gap-2 bg-green-50 px-3 py-1.5 md:px-4 md:py-2 rounded-full border border-green-100">
+            <TrendingUp className="w-3 h-3 md:w-4 md:h-4 text-green-600" />
+            <span className="text-[10px] md:text-[14px] font-black text-green-700 uppercase tracking-widest">{trend}</span>
           </div>
         )}
       </div>
       <div>
-        <p className="text-[14px] font-black text-[#310101]/60 uppercase tracking-[0.3em] mb-2">{title}</p>
-        <p className="text-5xl font-serif font-black text-[#310101] tracking-tighter italic">{value}</p>
+        <p className="text-[11px] md:text-[14px] font-black text-[#310101]/60 uppercase tracking-[0.2em] md:tracking-[0.3em] mb-1 md:mb-2">{title}</p>
+        <p className="text-3xl md:text-5xl font-serif font-black text-[#310101] tracking-tighter italic">{value}</p>
       </div>
     </div>
   );
@@ -582,6 +671,7 @@ const AdminDashboard = () => {
     { title: "Categories", icon: Tag },
     ...(isSuperAdmin ? [{ title: "Admin Requests", icon: Zap }] : []),
     { title: "Settings", icon: Settings },
+    { title: "Company Reviews", icon: Star },
   ];
 
   const filteredProducts = (inventory || []).filter(p => {
@@ -621,12 +711,37 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleExtraImageChange = async (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsUploading(true);
+    try {
+      const { uploadToCloudinary } = await import("@/utils/cloudinary");
+      const cloudUrl = await uploadToCloudinary(file);
+      if (editingProduct) {
+        const newExtras = [...(editingProduct.extraImages || ["", "", "", ""])];
+        newExtras[index] = cloudUrl;
+        setEditingProduct((prev: any) => ({ ...prev, extraImages: newExtras }));
+      } else {
+        const newExtras = [...(newProduct.extraImages || ["", "", "", ""])];
+        newExtras[index] = cloudUrl;
+        setNewProduct((prev: any) => ({ ...prev, extraImages: newExtras }));
+      }
+      toast.success(`Gallery Image ${index + 1} synchronized!`);
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   const handleResetNewProduct = () => {
     setNewProduct({
       name: "", price: "", discountPrice: "", category: "Perfumes", image: "", description: "",
       isNew: false, isBestseller: false, highlights: ["", "", ""],
       specs: [{ label: "", value: "" }], stock: "50", section: "Main Store",
-      subCategory: "Unisex", isLive: true
+      subCategory: "Unisex", isLive: true,
+      extraImages: ["", "", "", ""]
     });
     setImageFile(null);
     setImagePreview(null);
@@ -642,7 +757,7 @@ const AdminDashboard = () => {
       
       await addProduct({
         ...newProduct,
-        price: `â‚¹${parseInt(newProduct.price).toLocaleString()}`,
+        price: `\u20B9${parseInt(newProduct.price).toLocaleString()}`,
         numericPrice: parseInt(newProduct.price),
         stock: stockNum,
         status: stockNum > 10 ? "In Stock" : stockNum > 0 ? "Low Stock" : "Out of Stock",
@@ -667,7 +782,7 @@ const AdminDashboard = () => {
     const stockNum = parseInt(editingProduct.stock) || 0;
     updateProduct({
       ...editingProduct,
-      price: `â‚¹${parseInt(editingProduct.price).toLocaleString()}`,
+      price: `\u20B9${parseInt(editingProduct.price).toLocaleString()}`,
       numericPrice: parseInt(editingProduct.price),
       stock: stockNum,
       status: stockNum > 10 ? "In Stock" : stockNum > 0 ? "Low Stock" : "Out of Stock",
@@ -716,18 +831,41 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleDeleteReview = async (id: string) => {
+    if (confirm("Permanently remove this reflection from the boutique?")) {
+      try {
+        await deleteDoc(doc(db, "reviews", id));
+        toast.success("Review removed.");
+      } catch (err: any) {
+        toast.error(err.message);
+      }
+    }
+  };
+
 
 
   return (
-    <div className="min-h-screen bg-[#FDFCFB] flex font-sans">
+    <div className="min-h-screen bg-[#FDFCFB] flex font-sans overflow-x-hidden">
+      {/* Mobile Sidebar Overlay */}
+      {isSidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 lg:hidden" 
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
       {/* Sidebar */}
-      <aside className={`${isSidebarOpen ? "w-64" : "w-20"} bg-[#310101] text-white transition-all duration-300 flex flex-col shrink-0 shadow-2xl relative z-20`}>
-        <div className="p-6 border-b border-white/5 flex items-center justify-between">
+      <aside className={`
+        fixed inset-y-0 left-0 z-50 bg-[#310101] text-white transition-all duration-300 flex flex-col shrink-0 shadow-2xl
+        ${isSidebarOpen ? "translate-x-0 w-64" : "-translate-x-full lg:translate-x-0 lg:w-20"}
+        lg:relative
+      `}>
+        <div className="p-4 border-b border-white/5 flex items-center justify-between">
           {isSidebarOpen && (
             <img 
               src="/logo.png" 
               alt="Kaleemiya Logo" 
-              className="h-8 w-auto object-contain drop-shadow-xl" 
+              className="h-10 w-auto object-contain drop-shadow-xl" 
             />
           )}
           <button onClick={() => setSidebarOpen(!isSidebarOpen)} className="p-1.5 hover:bg-white/10 rounded-lg">
@@ -743,7 +881,7 @@ const AdminDashboard = () => {
             >
               <tab.icon className={`w-6 h-6 shrink-0 transition-colors ${activeTab === tab.title ? "text-[#310101]" : "text-[#E5D5C5]/60"}`} />
               {isSidebarOpen && (
-                <span className="text-[15px] font-black uppercase tracking-[0.1em] text-left truncate leading-none">
+                <span className="text-[14px] font-black uppercase tracking-[0.1em] text-left leading-none">
                   {tab.title === "Boutique News and Announcements" ? "Broadcasts" : tab.title}
                 </span>
               )}
@@ -766,12 +904,12 @@ const AdminDashboard = () => {
 
           <div className="px-2">
              {isSidebarOpen ? (
-               <div className="bg-white/5 rounded-[25px] p-4 border border-white/5 flex items-center gap-4 show-xl">
+               <div className="bg-white/5 rounded-[25px] p-5 border border-white/5 flex items-center gap-4 shadow-xl">
                   <div className="w-12 h-12 rounded-full bg-[#B0843D] flex items-center justify-center font-serif italic text-xl font-bold text-white shadow-lg">
                     {user?.displayName?.charAt(0) || user?.email?.charAt(0) || "K"}
                   </div>
                   <div className="flex-1 overflow-hidden">
-                     <p className="text-[14px] font-black uppercase tracking-tight text-white truncate">
+                     <p className="text-[18px] font-black uppercase tracking-tight text-white leading-tight">
                         {user?.displayName || "Authorized User"}
                      </p>
                      <div className="flex items-center gap-1.5">
@@ -790,7 +928,7 @@ const AdminDashboard = () => {
           {isSidebarOpen ? (
             <button
                onClick={async () => { await logout(); window.location.href = "/"; }}
-               className="w-full flex items-center justify-center gap-3 px-6 py-4 rounded-2xl bg-white text-[#310101] hover:bg-red-500 hover:text-white transition-all duration-300 shadow-2xl font-black uppercase tracking-[0.1em] text-[12px]"
+               className="w-full flex items-center justify-center gap-4 px-8 py-5 rounded-2xl bg-white text-[#310101] hover:bg-red-500 hover:text-white transition-all duration-300 shadow-2xl font-black uppercase tracking-[0.1em] text-[12px]"
             >
                <LogOut className="w-4 h-4" />
                Sign Out Account
@@ -803,8 +941,16 @@ const AdminDashboard = () => {
 
       {/* Main */}
       <main className="flex-1 flex flex-col h-screen overflow-hidden relative">
-        <header className="bg-white/80 backdrop-blur-md border-b h-16 flex items-center justify-between px-8 shrink-0 shadow-sm z-10">
-          <h1 className="text-xl font-serif text-[#310101] italic font-bold">{activeTab}</h1>
+        <header className="bg-white/80 backdrop-blur-md border-b h-16 flex items-center justify-between px-4 md:px-8 shrink-0 shadow-sm z-30">
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={() => setSidebarOpen(!isSidebarOpen)}
+              className="p-2 hover:bg-gray-100 rounded-xl lg:hidden text-[#310101]"
+            >
+              <Menu className="w-6 h-6" />
+            </button>
+            <h1 className="text-lg md:text-xl font-serif text-[#310101] italic font-bold">{activeTab}</h1>
+          </div>
           <div className="flex items-center gap-6">
             <button 
               onClick={() => window.location.reload()} 
@@ -827,9 +973,9 @@ const AdminDashboard = () => {
         <div className="flex-1 overflow-y-auto p-4 bg-[#FDFCFB]">
 
           {activeTab === "Dashboard" && (
-            <div className="space-y-10 max-w-7xl mx-auto pb-20">
+            <div className="space-y-6 md:space-y-10 max-w-7xl mx-auto pb-20">
               <div className="pt-4 px-2">
-                <div className="bg-white rounded-[70px] p-16 shadow-sm border border-gray-100 relative overflow-hidden group">
+                <div className="bg-white rounded-[40px] md:rounded-[70px] p-6 md:p-16 shadow-sm border border-gray-100 relative overflow-hidden group">
                   <div className="relative z-10 space-y-10">
                     <div className="flex items-center gap-4">
                       <div className="bg-[#310101] px-6 py-2 rounded-full flex items-center gap-3">
@@ -838,22 +984,22 @@ const AdminDashboard = () => {
                       </div>
                     </div>
                     <div className="space-y-4">
-                      <h2 className="text-8xl md:text-9xl font-serif font-black text-[#310101] tracking-tighter leading-[0.9] flex flex-wrap gap-x-6 items-baseline">
+                      <h2 className="text-4xl md:text-7xl font-serif font-black text-[#310101] tracking-tighter leading-tight md:leading-[0.8] flex flex-wrap gap-x-4 items-baseline">
                         Welcome,
-                        <span className="text-[#B0843D] italic font-medium lowercase">Tanveer!</span>
+                        <span className="text-[#B0843D] italic font-medium lowercase decoration-[#B0843D]/20 underline underline-offset-8 decoration-8">{user?.displayName?.split(" ")[0] || "Tanveer"}!</span>
                       </h2>
-                      <p className="text-xl font-medium text-[#310101] max-w-3xl leading-relaxed mt-6">
+                      <p className="text-base md:text-xl font-medium text-[#310101] max-w-3xl leading-relaxed mt-4 md:mt-6">
                         Curating the essence of elegance at <span className="font-bold text-[#310101] border-b-4 border-[#B0843D] pb-1 uppercase tracking-widest">Kaleemiya</span>.
                       </p>
                     </div>
-                    <div className="flex flex-wrap gap-6 pt-4">
-                      <button onClick={() => setActiveTab("New Desk")} className="bg-[#310101] text-white px-12 py-7 rounded-[30px] shadow-2xl hover:bg-[#1a0101] hover:scale-105 transition-all flex items-center gap-4 group/btn">
-                        <PlusCircle className="w-6 h-6 text-[#E5D5C5] group-hover/btn:rotate-90 transition-transform" />
-                        <span className="text-[14px] font-black uppercase tracking-[0.2em]">Publish New Item</span>
+                    <div className="flex flex-col sm:flex-row gap-4 md:gap-6 pt-4">
+                      <button onClick={() => setActiveTab("New Desk")} className="bg-[#310101] text-white px-8 py-5 md:px-12 md:py-7 rounded-[20px] md:rounded-[30px] shadow-2xl hover:bg-[#1a0101] hover:scale-105 transition-all flex items-center justify-center gap-4 group/btn">
+                        <PlusCircle className="w-5 h-5 md:w-6 md:h-6 text-[#E5D5C5] group-hover/btn:rotate-90 transition-transform" />
+                        <span className="text-[12px] md:text-[14px] font-black uppercase tracking-[0.2em]">Publish New Item</span>
                       </button>
-                      <button onClick={() => window.location.href = "/"} className="bg-white border border-[#310101]/10 text-[#310101] px-12 py-7 rounded-[30px] shadow-sm hover:shadow-xl hover:bg-gray-50 transition-all flex items-center gap-4">
-                        <Eye className="w-6 h-6" />
-                        <span className="text-[14px] font-black uppercase tracking-[0.2em]">Main Portal</span>
+                      <button onClick={() => window.location.href = "/"} className="bg-white border border-[#310101]/10 text-[#310101] px-8 py-5 md:px-12 md:py-7 rounded-[20px] md:rounded-[30px] shadow-sm hover:shadow-xl hover:bg-gray-50 transition-all flex items-center justify-center gap-4">
+                        <Eye className="w-5 h-5 md:w-6 md:h-6" />
+                        <span className="text-[12px] md:text-[14px] font-black uppercase tracking-[0.2em]">Main Portal</span>
                       </button>
                     </div>
                   </div>
@@ -869,49 +1015,10 @@ const AdminDashboard = () => {
 
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 px-2">
                 <div className="lg:col-span-2 space-y-10">
-                   <div className="bg-[#F9F6F2] rounded-[60px] p-16 shadow-xl border border-[#310101]/5 relative overflow-hidden group/card min-h-[500px] flex flex-col justify-between">
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-[#B0843D] opacity-[0.03] rounded-full -mr-32 -mt-32 transition-transform duration-700 group-hover/card:scale-110"></div>
-                    <div className="flex justify-between items-start mb-12 relative z-10 w-full">
-                      <div className="space-y-1">
-                        <h4 className="text-4xl font-serif font-black italic text-[#310101] tracking-tight">Revenue Velocity</h4>
-                        <p className="text-[11px] font-black text-[#B0843D] uppercase tracking-[0.4em] opacity-60">Graphed Boutique Analytics</p>
-                      </div>
-                      <div className="bg-[#310101] text-[#E5D5C5] px-6 py-2 rounded-full text-[12px] font-black uppercase tracking-[0.2em] shadow-lg flex items-center gap-3">
-                         <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-                         7 Days • Live Data
-                      </div>
-                    </div>
-                    <div className="h-64 flex items-end justify-between gap-6 px-4 w-full mt-auto">
-                      {[
-                        { day: "MON", h: 40, v: "2.1k", g: "from-[#310101] to-[#B0843D]" },
-                        { day: "TUE", h: 70, v: "4.5k", g: "from-[#4a0101] to-[#D4AF37]" },
-                        { day: "WED", h: 45, v: "2.8k", g: "from-[#2b0000] to-[#E5D5C5]" },
-                        { day: "THU", h: 90, v: "6.2k", g: "from-[#B0843D] to-[#F9F6F2]" },
-                        { day: "FRI", h: 65, v: "4.1k", g: "from-[#310101] to-[#B0843D]" },
-                        { day: "SAT", h: 80, v: "5.5k", g: "from-[#6a0d0d] to-[#B0843D]" },
-                        { day: "SUN", h: 100, v: "8.0k", g: "from-[#310101] to-[#D4AF37]" },
-                      ].map((bar, i) => (
-                        <div key={i} className="flex-1 h-full flex flex-col justify-end gap-6 group/bar-container min-w-0">
-                          <div className="flex-1 relative flex items-end">
-                            <motion.div 
-                              initial={{ height: 0 }} 
-                              animate={{ height: `${bar.h}%` }} 
-                              transition={{ duration: 1, delay: i * 0.1 }}
-                              className={`w-full bg-gradient-to-t ${bar.g} rounded-t-2xl relative group/bar hover:scale-[1.05] transition-all duration-500 shadow-lg hover:shadow-2xl border-x border-t border-white/5 cursor-pointer`}
-                            >
-                               <div className="absolute -top-12 left-1/2 -translate-x-1/2 bg-[#310101] text-[#E5D5C5] px-4 py-2 rounded-2xl text-[12px] font-black uppercase tracking-widest opacity-0 group-hover/bar:opacity-100 transition-all duration-300 shadow-2xl border border-white/10 whitespace-nowrap z-50">
-                                 ₹{bar.v}
-                               </div>
-                            </motion.div>
-                          </div>
-                          <div className="text-[12px] font-black text-[#1A1A1A]/40 text-center uppercase tracking-widest leading-none pb-2">{bar.day}</div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="bg-white rounded-[60px] p-12 shadow-sm border border-gray-100 flex flex-col">
-                    <h4 className="text-[15px] font-black text-[#1A1A1A] uppercase tracking-[0.4em] mb-12">Recent Activity</h4>
-                    <div className="space-y-8">
+                  <RevenueVelocity />
+                  <div className="bg-white rounded-[40px] md:rounded-[60px] p-6 md:p-12 shadow-sm border border-gray-100 flex flex-col">
+                    <h4 className="text-[13px] md:text-[15px] font-black text-[#1A1A1A] uppercase tracking-[0.4em] mb-8 md:mb-12">Recent Activity</h4>
+                    <div className="space-y-6 md:space-y-8">
                       {inventory.slice(0, 4).map((item, i) => (
                         <div 
                           key={i} 
@@ -1000,7 +1107,7 @@ const AdminDashboard = () => {
             <div className="space-y-12 pb-24 max-w-7xl mx-auto px-4">
               <div className="flex flex-col md:flex-row md:items-end justify-between gap-10">
                   <div className="space-y-4">
-                    <h2 className="text-8xl font-serif font-black text-black tracking-tighter italic">Boutique Broadcasts</h2>
+                    <h2 className="text-5xl font-serif font-black text-black tracking-tighter italic">Boutique Broadcasts</h2>
                     <p className="text-xl font-serif italic text-black/40 max-w-2xl">Publish special offers, Eid greetings, and boutique announcements to your clientele.</p>
                   </div>
                   <button onClick={() => setIsNewsModalOpen(true)} className="bg-[#310101] text-[#E5D5C5] px-12 py-7 rounded-[40px] font-black uppercase text-[14px] shadow-2xl hover:scale-105 transition-all">Broadcast New Offer</button>
@@ -1019,7 +1126,7 @@ const AdminDashboard = () => {
                       {(item.startDate || item.endDate) && (
                          <div className="pt-4 flex items-center gap-2 text-[14px] font-black uppercase tracking-widest text-[#B0843D]">
                             <Calendar className="w-3 h-3" />
-                            <span>{item.startDate || "Ongoing"} â€” {item.endDate || "No Expiry"}</span>
+                            <span>{item.startDate || "Ongoing"} — {item.endDate || "No Expiry"}</span>
                          </div>
                       )}
                     </div>
@@ -1052,11 +1159,59 @@ const AdminDashboard = () => {
             </div>
           )}
 
+          {activeTab === "Company Reviews" && (
+            <div className="space-y-12 max-w-7xl mx-auto pb-32 px-4">
+              <div className="flex flex-col md:flex-row md:items-end justify-between gap-10">
+                  <div className="space-y-4">
+                    <h2 className="text-5xl font-serif font-black text-black tracking-tighter italic">Review Terminal</h2>
+                    <p className="text-xl font-serif italic text-black/40 max-w-2xl">Monitor and manage the shared experiences of your clientele. Every reflection counts toward your boutique's excellence.</p>
+                  </div>
+              </div>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-12">
+                 {allReviews.length > 0 ? allReviews.map((rev) => (
+                    <div key={rev.id} className="bg-white border rounded-[50px] p-10 shadow-sm space-y-6 relative group overflow-hidden">
+                       <div className="flex justify-between items-start">
+                          <div className="flex items-center gap-4">
+                             <div className="w-14 h-14 rounded-full bg-[#310101] flex items-center justify-center text-white font-serif italic text-xl shadow-lg">
+                                {rev.userName ? rev.userName.charAt(0) : "G"}
+                             </div>
+                             <div>
+                                <h4 className="text-[16px] font-black uppercase tracking-widest text-[#310101]">{rev.userName}</h4>
+                                <p className="text-[11px] font-black uppercase tracking-widest opacity-30">{rev.createdAt ? rev.createdAt.toDate().toLocaleDateString('en-GB') : "Just Now"}</p>
+                             </div>
+                          </div>
+                          <div className="flex gap-1">
+                             {[...Array(5)].map((_, i) => (
+                                <Star key={i} className={`w-4 h-4 ${i < (rev.rating || 0) ? "text-amber-500 fill-current" : "text-gray-100"}`} />
+                             ))}
+                          </div>
+                       </div>
+                       <div className="bg-[#F9F6F2] p-8 rounded-[35px] border border-[#310101]/5 italic font-serif text-lg text-black/70">
+                          "{rev.comment}"
+                       </div>
+                       <div className="pt-6 border-t border-dashed flex justify-between items-center bg-white">
+                          <p className="text-[12px] font-black uppercase tracking-widest text-[#B0843D]">Ref ID: {rev.id.slice(0,8)}</p>
+                          <button onClick={() => handleDeleteReview(rev.id)} className="p-4 bg-red-50 text-red-500 rounded-2xl hover:bg-red-500 hover:text-white transition-all shadow-sm">
+                             <Trash2 className="w-5 h-5" />
+                          </button>
+                       </div>
+                    </div>
+                 )) : (
+                    <div className="col-span-full py-40 text-center bg-white rounded-[60px] border-4 border-dashed border-gray-50">
+                       <Star className="w-24 h-24 text-black/5 mx-auto mb-8" />
+                       <h4 className="text-4xl font-serif italic text-black/20">No reflections shared yet.</h4>
+                       <p className="text-sm font-black uppercase tracking-widest text-[#B0843D] mt-4">Reviews will appear here as customers share their experiences.</p>
+                    </div>
+                 )}
+              </div>
+            </div>
+          )}
+
           {activeTab === "Our Bestsellers" && (
             <div className="space-y-12 max-w-7xl mx-auto pb-32 px-4">
                <div className="flex flex-col md:flex-row md:items-end justify-between gap-12 bg-white p-16 rounded-[60px] border shadow-sm relative overflow-hidden">
                   <div className="relative z-10">
-                    <h2 className="text-8xl font-serif font-black text-[#310101] tracking-tighter italic">Bestseller Hub</h2>
+                    <h2 className="text-5xl font-serif font-black text-[#310101] tracking-tighter italic">Bestseller Hub</h2>
                     <p className="text-xl font-serif italic text-black/50 mt-4 leading-relaxed max-w-2xl">
                        Fine-tune your flagship collection. Items ranked here appear in the "Our Bestsellers" gallery on the homepage.
                     </p>
@@ -1104,16 +1259,16 @@ const AdminDashboard = () => {
           )}
 
           {activeTab === "Manage Stock" && (
-            <div className="space-y-10 max-w-7xl mx-auto pb-32">
-              <div className="bg-white rounded-[50px] p-12 shadow-sm border border-gray-100 space-y-10">
-                <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-12 border-b border-gray-100 pb-12">
-                  <div className="space-y-6">
+            <div className="space-y-6 md:space-y-10 max-w-7xl mx-auto pb-32">
+              <div className="bg-white rounded-[30px] md:rounded-[50px] p-6 md:p-12 shadow-sm border border-gray-100 space-y-6 md:space-y-10">
+                <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 md:gap-12 border-b border-gray-100 pb-8 md:pb-12">
+                  <div className="space-y-2 md:space-y-6">
                     <div className="flex items-center gap-6">
-                      <h2 className="text-7xl font-serif font-black text-black tracking-tighter italic lowercase first-letter:uppercase leading-none">Live Inventory</h2>
+                      <h2 className="text-3xl md:text-5xl font-serif font-black text-black tracking-tighter italic lowercase first-letter:uppercase leading-none">Live Inventory</h2>
                     </div>
                   </div>
-                  <button onClick={() => setActiveTab("New Desk")} className="bg-[#310101] text-white px-12 py-7 rounded-[30px] font-black uppercase text-[14px] shadow-2xl hover:bg-black hover:scale-105 transition-all flex items-center gap-4">
-                     <PlusCircle className="w-6 h-6 text-[#E5D5C5]" />
+                  <button onClick={() => setActiveTab("New Desk")} className="w-full sm:w-auto bg-[#310101] text-white px-8 py-5 md:px-12 md:py-7 rounded-[20px] md:rounded-[30px] font-black uppercase text-[12px] md:text-[14px] shadow-2xl hover:bg-black hover:scale-105 transition-all flex items-center justify-center gap-4">
+                     <PlusCircle className="w-5 h-5 md:w-6 md:h-6 text-[#E5D5C5]" />
                      Add New Perfume
                   </button>
                 </div>
@@ -1154,15 +1309,12 @@ const AdminDashboard = () => {
                     </div>
                     <div className="p-8 pb-6 flex-1 flex flex-col justify-between space-y-4">
                       <div className="flex justify-end mb-1 -mt-6">
-                        <div className="bg-white/90 backdrop-blur-sm border border-gray-100 rounded-full px-2 py-1 flex items-center gap-1 z-10 relative shadow-sm">
-                           <Star size={11} className="text-[#BFA15F] fill-[#BFA15F]" />
-                           <span className="text-[15px] text-[#555] font-medium tracking-tight font-sans">4.2 | 10</span>
-                        </div>
+                        {/* Rating placeholder removed to ensure clean UI */}
                       </div>
 
                       <div className="space-y-1">
                         <h3 className="font-sans font-medium text-[#C29D59] text-[18px] tracking-normal leading-tight line-clamp-2">{product.name}</h3>
-                        <p className="text-[14px] font-black text-black/30 uppercase tracking-[0.2em]">{product.category || "Uncategorized"} {product.subCategory && `â€” ${product.subCategory}`}</p>
+                        <p className="text-[14px] font-black text-black/30 uppercase tracking-[0.2em]">{product.category || "Uncategorized"} {product.subCategory && ` → ${product.subCategory}`}</p>
                       </div>
                       
                       <div className="space-y-6">
@@ -1172,10 +1324,10 @@ const AdminDashboard = () => {
                                 {product.discountPrice ? (
                                   <>
                                     <span className="font-sans text-[24px] font-bold text-[#111] leading-none">
-                                      â‚¹{parseInt(product.discountPrice.replace(/[^\d]/g, "")).toLocaleString()}
+                                      {"\u20B9"}{parseInt(product.discountPrice.replace(/[^\d]/g, "") || "0").toLocaleString()}
                                     </span>
                                     <span className="text-[#747e8e] line-through text-[15px] font-medium font-sans">
-                                      {product.price}
+                                      {"\u20B9"}{parseInt(product.price.replace(/[^\d]/g, "") || "0").toLocaleString()}
                                     </span>
                                     {(() => {
                                       const rP = parseInt(product.price.replace(/[^\d]/g, "") || "0");
@@ -1191,7 +1343,9 @@ const AdminDashboard = () => {
                                     })()}
                                   </>
                                 ) : (
-                                  <span className="font-sans text-[24px] font-bold text-[#111] leading-none">{product.price}</span>
+                                  <span className="font-sans text-[24px] font-bold text-[#111] leading-none">
+                                    {"\u20B9"}{parseInt(product.price.replace(/[^\d]/g, "") || "0").toLocaleString()}
+                                  </span>
                                 )}
                               </div>
                               {product.stock !== undefined && (
@@ -1249,9 +1403,10 @@ const AdminDashboard = () => {
 
           {activeTab === "Orders" && (
             <div className="space-y-6 pb-4">
-              <h2 className="text-5xl font-serif font-black text-black tracking-tighter italic">Fulfillment Portal</h2>
+              <h2 className="text-3xl md:text-5xl font-serif font-black text-black tracking-tighter italic">Fulfillment Portal</h2>
               <div className="bg-white rounded-[30px] border border-gray-100 overflow-hidden shadow-sm">
-                <table className="w-full text-left">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left min-w-[800px]">
                   <thead className="bg-[#FAF9F6] text-[14px] font-black uppercase tracking-[0.2em] text-[#310101]/90 border-b">
                     <tr>
                       <th className="px-10 py-6 text-left">Order ID</th>
@@ -1275,7 +1430,7 @@ const AdminDashboard = () => {
                            </div>
                         </td>
                         <td className="px-10 py-7 text-center font-bold text-black/60 italic">{order.qty}</td>
-                        <td className="px-10 py-7 text-center font-black">{order.amount}</td>
+                        <td className="px-10 py-7 text-center font-black">{"\u20B9"}{parseInt(order.amount.toString().replace(/[^\d]/g, "") || "0").toLocaleString()}</td>
                         <td className="px-10 py-7 text-center">
                            <button 
                              onClick={() => setSelectedOrder(order)} 
@@ -1291,7 +1446,8 @@ const AdminDashboard = () => {
                       </tr>
                     ))}
                   </tbody>
-                </table>
+                  </table>
+                </div>
               </div>
             </div>
           )}
@@ -1300,7 +1456,7 @@ const AdminDashboard = () => {
             <div className="space-y-16 pb-32 max-w-7xl mx-auto px-4">
               <div className="flex flex-col md:flex-row justify-between items-end gap-10">
                  <div className="space-y-4">
-                    <h2 className="text-8xl font-serif font-black text-black tracking-tighter italic">Boutique Clientele</h2>
+                    <h2 className="text-5xl font-serif font-black text-black tracking-tighter italic">Boutique Clientele</h2>
                     <p className="text-xl font-serif italic text-black/40">Management of your exclusive community and their shopping profiles.</p>
                  </div>
                  <div className="bg-white px-8 py-5 rounded-[25px] border shadow-sm">
@@ -1339,7 +1495,7 @@ const AdminDashboard = () => {
                            </div>
                            <div className="space-y-1">
                               <p className="text-[14px] font-black uppercase opacity-20 tracking-widest">Total Spend</p>
-                              <p className="text-2xl font-black text-green-600">â‚¹{totalSpent.toLocaleString()}</p>
+                              <p className="text-2xl font-black text-green-600">₹{totalSpent.toLocaleString()}</p>
                            </div>
                         </div>
                       </div>
@@ -1405,7 +1561,7 @@ const AdminDashboard = () => {
           {activeTab === "Categories" && (
             <div className="space-y-6 pb-4">
                <div className="flex justify-between items-center bg-white p-8 rounded-[40px] border">
-                  <h2 className="text-4xl font-serif font-black italic">Collection Directory</h2>
+                  <h2 className="text-3xl font-serif font-black italic">Collection Directory</h2>
                   <button onClick={handleAddCategory} className="bg-black text-white px-10 py-4 rounded-full text-[14px] font-black uppercase tracking-widest">Add Category</button>
                </div>
                <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
@@ -1417,13 +1573,22 @@ const AdminDashboard = () => {
                            </div>
                            <div className="flex gap-2">
                              {!["Our Bestseller", "New Arrival"].includes(cat) && (
-                               <button 
-                                 onClick={() => handleDeleteCategory(cat)}
-                                 className="p-3 bg-red-50 text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition-all"
-                                 title="Delete Category"
-                               >
-                                  <Trash2 className="w-5 h-5" />
-                               </button>
+                               <>
+                                 <button 
+                                   onClick={() => handleDeleteCategory(cat)}
+                                   className="p-3 bg-red-50 text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition-all"
+                                   title="Delete Category"
+                                 >
+                                    <Trash2 className="w-5 h-5" />
+                                 </button>
+                                 <button 
+                                   onClick={() => handleEditCategory(cat)}
+                                   className="p-3 bg-blue-50 text-blue-500 rounded-xl hover:bg-blue-500 hover:text-white transition-all"
+                                   title="Rename Category"
+                                 >
+                                    <Edit2 className="w-5 h-5" />
+                                 </button>
+                               </>
                              )}
                              <button 
                                onClick={() => handleAddSubCategory(cat)}
@@ -1437,16 +1602,25 @@ const AdminDashboard = () => {
                         <h3 className="font-serif font-black text-2xl italic text-[#310101] mb-4">{cat}</h3>
                         <div className="flex flex-wrap gap-2">
                            {(dynamicSubCategories[cat] || []).map((sub, si) => (
-                              <span key={si} className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 hover:bg-white rounded-lg text-[14px] font-black uppercase tracking-widest text-black/40 border border-gray-100 relative shadow-sm transition-colors">
+                              <span key={si} className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 hover:bg-white rounded-lg text-[14px] font-black uppercase tracking-widest text-black/40 border border-gray-100 relative shadow-sm transition-colors group/sub">
                                  {sub}
                                  {!["General"].includes(sub) && (
-                                   <button 
-                                     onClick={(e) => { e.stopPropagation(); handleDeleteSubCategory(cat, sub); }} 
-                                     className="hover:text-red-500 hover:bg-red-50 rounded-full transition-all text-black/20 ml-0.5 mt-0.5 aspect-square flex items-center justify-center p-0.5"
-                                     title="Delete Sub-category"
-                                   >
-                                      <X className="w-3.5 h-3.5" />
-                                   </button>
+                                   <div className="flex items-center gap-1">
+                                     <button 
+                                       onClick={(e) => { e.stopPropagation(); handleEditSubCategory(cat, sub); }} 
+                                       className="hover:text-blue-500 hover:bg-blue-50 rounded-full transition-all text-black/20 aspect-square flex items-center justify-center p-0.5"
+                                       title="Rename Sub-category"
+                                     >
+                                        <Edit2 className="w-3 h-3" />
+                                     </button>
+                                     <button 
+                                       onClick={(e) => { e.stopPropagation(); handleDeleteSubCategory(cat, sub); }} 
+                                       className="hover:text-red-500 hover:bg-red-50 rounded-full transition-all text-black/20 aspect-square flex items-center justify-center p-0.5"
+                                       title="Delete Sub-category"
+                                     >
+                                        <X className="w-3.5 h-3.5" />
+                                     </button>
+                                   </div>
                                  )}
                               </span>
                            ))}
@@ -1460,7 +1634,7 @@ const AdminDashboard = () => {
           {activeTab === "Admin Requests" && isSuperAdmin && (
             <div className="space-y-12 max-w-6xl mx-auto pb-24">
               <div className="flex flex-col lg:flex-row justify-between lg:items-end gap-10">
-                <h2 className="text-7xl font-serif font-black text-black tracking-tighter italic">Portal Permissions</h2>
+                <h2 className="text-5xl font-serif font-black text-black tracking-tighter italic">Portal Permissions</h2>
                 
                 <div className="flex gap-6">
                   <div className="bg-[#310101] text-[#E5D5C5] px-10 py-6 rounded-3xl flex items-center gap-6 shadow-xl">
@@ -1583,17 +1757,17 @@ const AdminDashboard = () => {
 
 
           {activeTab === "New Desk" && (
-            <div className="max-w-4xl mx-auto pb-32">
-              <div className="bg-[#1A1A1A] rounded-[40px] p-10 mb-12 shadow-2xl flex items-center justify-between">
-                   <h2 className="text-5xl font-serif font-black text-white italic">New Creation Desk</h2>
-                   <div className="flex gap-4">
-                      <button onClick={handleSyncDefaults} className="bg-white/10 text-white/70 px-6 py-3 rounded-xl uppercase font-black text-[14px] hover:bg-[#B0843D] hover:text-white transition-all">Sync Catalog Structure</button>
-                      <button onClick={handleResetNewProduct} className="bg-white/10 text-white/50 px-6 py-3 rounded-xl uppercase font-black text-[14px]">Reset Creation</button>
+            <div className="max-w-4xl mx-auto pb-32 px-2">
+              <div className="bg-[#1A1A1A] rounded-[30px] md:rounded-[40px] p-6 md:p-10 mb-8 md:mb-12 shadow-2xl flex flex-col md:flex-row items-center justify-between gap-6">
+                   <h2 className="text-3xl md:text-5xl font-serif font-black text-white italic">New Creation Desk</h2>
+                   <div className="flex flex-wrap justify-center gap-4">
+                      <button onClick={handleSyncDefaults} className="bg-white/10 text-white/70 px-4 py-2 md:px-6 md:py-3 rounded-xl uppercase font-black text-[12px] md:text-[14px] hover:bg-[#B0843D] hover:text-white transition-all">Sync Structure</button>
+                      <button onClick={handleResetNewProduct} className="bg-white/10 text-white/50 px-4 py-2 md:px-6 md:py-3 rounded-xl uppercase font-black text-[12px] md:text-[14px]">Reset</button>
                    </div>
               </div>
-              <form onSubmit={handleAddProduct} className="bg-white rounded-[60px] p-16 shadow-2xl space-y-12">
-                <input required placeholder="Perfume Name..." value={newProduct.name} onChange={e => setNewProduct({...newProduct, name: e.target.value})} className="w-full text-7xl font-serif font-black outline-none border-b focus:border-black italic" />
-                <textarea required placeholder="Aromatic Story details..." value={newProduct.description} onChange={e => setNewProduct({...newProduct, description: e.target.value})} className="w-full h-40 outline-none text-2xl font-serif italic border-none resize-none opacity-50 focus:opacity-100 transition-all" />
+              <form onSubmit={handleAddProduct} className="bg-white rounded-[40px] md:rounded-[60px] p-6 md:p-16 shadow-2xl space-y-8 md:space-y-12">
+                <input required placeholder="Perfume Name..." value={newProduct.name} onChange={e => setNewProduct({...newProduct, name: e.target.value})} className="w-full text-4xl md:text-7xl font-serif font-black outline-none border-b focus:border-black italic pb-4" />
+                <textarea required placeholder="Aromatic Story details..." value={newProduct.description} onChange={e => setNewProduct({...newProduct, description: e.target.value})} className="w-full h-32 md:h-40 outline-none text-xl md:text-2xl font-serif italic border-none resize-none opacity-50 focus:opacity-100 transition-all" />
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                    <div className="space-y-4">
                       <div className="flex justify-between items-center">
@@ -1619,7 +1793,7 @@ const AdminDashboard = () => {
                       </select>
                    </div>
                   <div className="space-y-4">
-                     <label className="text-[15px] font-black uppercase text-[#B0843D]">Retail Price (â‚¹)</label>
+                     <label className="text-[15px] font-black uppercase text-[#B0843D]">Retail Price (₹)</label>
                      <input type="number" required placeholder="e.g. 2999" value={newProduct.price} onChange={e => setNewProduct({...newProduct, price: e.target.value})} className="w-full p-6 bg-gray-50 rounded-[25px] font-bold border-none outline-none focus:ring-4 focus:ring-[#B0843D]/5" />
                   </div>
                   <div className="space-y-4">
@@ -1659,7 +1833,27 @@ const AdminDashboard = () => {
                    {imagePreview ? <img src={imagePreview} className="w-full h-full object-contain" /> : <div className="text-center"><PlusCircle className="w-12 h-12 text-black/10 mx-auto mb-4" /><p className="font-serif italic opacity-30 text-xl">Select Collection asset</p></div>}
                    <input type="file" onChange={handleImageChange} className="absolute inset-0 opacity-0 cursor-pointer" />
                 </div>
-                <button type="submit" disabled={isUploading} className="w-full bg-[#B0843D] text-white py-10 rounded-[35px] font-black uppercase text-[15px] shadow-xl hover:scale-[1.02] active:scale-95 transition-all">
+
+                <div className="space-y-4">
+                  <label className="text-[15px] font-black uppercase text-[#B0843D]">Optional Gallery Images (Optional)</label>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {[0, 1, 2, 3].map((idx) => (
+                      <div key={idx} className="relative aspect-square bg-gray-50 rounded-2xl border-2 border-dashed flex flex-col items-center justify-center overflow-hidden group">
+                        {newProduct.extraImages?.[idx] ? (
+                          <img src={newProduct.extraImages[idx]} className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="text-center p-2 opacity-20 group-hover:opacity-100 transition-opacity">
+                            <PlusCircle className="w-6 h-6 mx-auto mb-1" />
+                            <p className="text-[10px] font-black uppercase tracking-tighter">Optional {idx + 1}</p>
+                          </div>
+                        )}
+                        <input type="file" onChange={(e) => handleExtraImageChange(e, idx)} className="absolute inset-0 opacity-0 cursor-pointer" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <button type="submit" disabled={isUploading} className="w-full bg-[#B0843D] text-white py-6 md:py-10 rounded-[25px] md:rounded-[35px] font-black uppercase text-[14px] md:text-[15px] shadow-xl hover:scale-[1.02] active:scale-95 transition-all">
                    {isUploading ? "Uploading to Cloud..." : "Publish to Boutique Production"}
                 </button>
               </form>
@@ -1667,16 +1861,16 @@ const AdminDashboard = () => {
           )}
 
           {activeTab === "Settings" && (
-            <div className="max-w-6xl mx-auto space-y-12 pb-24">
-               <div className="flex items-end justify-between">
-                  <h2 className="text-7xl font-serif font-black italic tracking-tighter text-[#310101]">Dashboard Core</h2>
-                  <span className="text-[15px] font-black uppercase tracking-[0.3em] text-[#B0843D] pb-3 border-b-2 border-[#B0843D]/20">System Configuration</span>
+            <div className="max-w-6xl mx-auto space-y-8 md:space-y-12 pb-24 px-4">
+               <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+                  <h2 className="text-4xl md:text-7xl font-serif font-black italic tracking-tighter text-[#310101]">Dashboard Core</h2>
+                  <span className="text-[12px] md:text-[15px] font-black uppercase tracking-[0.3em] text-[#B0843D] md:pb-3 border-b-2 border-[#B0843D]/20 inline-block">System Configuration</span>
                </div>
                
-               <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-                  <div className="bg-white p-12 rounded-[60px] shadow-sm border border-[#E5D5C5]/30 space-y-10 relative overflow-hidden">
+               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-12">
+                  <div className="bg-white p-6 md:p-12 rounded-[40px] md:rounded-[60px] shadow-sm border border-[#E5D5C5]/30 space-y-8 md:space-y-10 relative overflow-hidden">
                      <div className="absolute top-0 right-0 w-40 h-40 bg-[#310101]/5 rounded-full -mr-20 -mt-20 blur-2xl"></div>
-                     <h3 className="text-3xl font-serif font-black italic text-[#310101]">Boutique Profile</h3>
+                     <h3 className="text-2xl md:text-3xl font-serif font-black italic text-[#310101]">Boutique Profile</h3>
                      <div className="space-y-8 relative z-10">
                         <div className="space-y-3">
                            <label className="text-[14px] font-black uppercase text-[#B0843D] tracking-widest">Boutique Name</label>
@@ -1690,12 +1884,12 @@ const AdminDashboard = () => {
                         <div className="grid grid-cols-2 gap-6">
                            <div className="space-y-3">
                               <label className="text-[14px] font-black uppercase text-[#B0843D] tracking-widest">Base Currency</label>
-                              <select value={storeSettings.currency || "INR (â‚¹)"} onChange={e => setStoreSettings({...storeSettings, currency: e.target.value})} className="w-full p-6 bg-gray-50 rounded-3xl font-bold outline-none focus:ring-4 focus:ring-[#B0843D]/10 transition-all border-none appearance-none">
-                                 <option>INR (â‚¹)</option>
+                              <select value={storeSettings.currency || "INR (\u20B9)"} onChange={e => setStoreSettings({...storeSettings, currency: e.target.value})} className="w-full p-6 bg-gray-50 rounded-3xl font-bold outline-none focus:ring-4 focus:ring-[#B0843D]/10 transition-all border-none appearance-none">
+                                 <option>INR ({"\u20B9"})</option>
                                  <option>USD ($)</option>
-                                 <option>AED (Ø¯.Ø¥)</option>
-                                 <option>GBP (Â£)</option>
-                                 <option>EUR (â‚¬)</option>
+                                 <option>AED ({"\u062F.\u0625"})</option>
+                                 <option>GBP ({"\u00A3"})</option>
+                                 <option>EUR ({"\u20AC"})</option>
                               </select>
                            </div>
                            <div className="space-y-3">
@@ -1721,10 +1915,10 @@ const AdminDashboard = () => {
                      </div>
                   </div>
 
-                  <div className="space-y-12">
-                     <div className="bg-white p-12 rounded-[60px] shadow-sm border border-[#E5D5C5]/30 space-y-10 group hover:shadow-xl transition-all relative overflow-hidden">
+                  <div className="space-y-8 md:space-y-12">
+                     <div className="bg-white p-6 md:p-12 rounded-[40px] md:rounded-[60px] shadow-sm border border-[#E5D5C5]/30 space-y-8 md:space-y-10 group hover:shadow-xl transition-all relative overflow-hidden">
                         <div className="absolute top-0 right-0 w-40 h-40 bg-[#B0843D]/10 rounded-full -mr-20 -mt-20 blur-2xl"></div>
-                        <h3 className="text-3xl font-serif font-black italic text-[#310101]">Security & Aesthetics</h3>
+                        <h3 className="text-2xl md:text-3xl font-serif font-black italic text-[#310101]">Security & Aesthetics</h3>
                         <div className="space-y-8 relative z-10">
                            <div className="space-y-4">
                               <label className="text-[14px] font-black uppercase text-[#B0843D] tracking-widest">Accent Brand Color</label>
@@ -1859,9 +2053,9 @@ const AdminDashboard = () => {
       {/* Modals */}
       <AnimatePresence>
         {isNewsModalOpen && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-md">
-            <motion.div initial={{ scale: 0.95, y: 20, opacity: 0 }} animate={{ scale: 1, y: 0, opacity: 1 }} exit={{ scale: 0.95, y: 20, opacity: 0 }} className="bg-white w-full max-w-4xl rounded-[60px] shadow-2xl relative overflow-hidden">
-                <div className="bg-[#310101] p-12 flex justify-between items-center text-[#E5D5C5]">
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-2 md:p-4 bg-black/50 backdrop-blur-md overflow-y-auto">
+            <motion.div initial={{ scale: 0.95, y: 20, opacity: 0 }} animate={{ scale: 1, y: 0, opacity: 1 }} exit={{ scale: 0.95, y: 20, opacity: 0 }} className="bg-white w-full max-w-4xl rounded-[40px] md:rounded-[60px] shadow-2xl relative overflow-hidden my-8">
+                <div className="bg-[#310101] p-6 md:p-12 flex justify-between items-center text-[#E5D5C5]">
                    <div className="flex items-center gap-6">
                       <div className="w-16 h-16 rounded-[22px] bg-[#B0843D] flex items-center justify-center shadow-2xl">
                          <Newspaper className="w-8 h-8 text-white" />
@@ -1878,39 +2072,39 @@ const AdminDashboard = () => {
                 </div>
                 <form onSubmit={editingNews ? handleUpdateNews : handleAddNews} className="p-16 space-y-12">
                    <div className="space-y-4">
-                      <label className="text-[14px] font-black uppercase text-[#B0843D] tracking-widest">Message Headline</label>
+                      <label className="text-[12px] md:text-[14px] font-black uppercase text-[#B0843D] tracking-widest">Message Headline</label>
                       <input 
                         required 
                         placeholder="E.g. Eid-ul-Fitr Special Offer: 20% off!" 
                         value={editingNews ? editingNews.title : newNews.title} 
                         onChange={e => editingNews ? setEditingNews({...editingNews, title: e.target.value}) : setNewNews({...newNews, title: e.target.value})} 
-                        className="w-full text-5xl font-serif font-black outline-none border-b-4 border-gray-50 focus:border-[#B0843D] transition-all italic text-[#310101]" 
+                        className="w-full text-2xl md:text-5xl font-serif font-black outline-none border-b-4 border-gray-50 focus:border-[#B0843D] transition-all italic text-[#310101]" 
                       />
                    </div>
-                   <div className="grid grid-cols-2 gap-8">
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
                       <div className="space-y-4">
-                         <label className="text-[14px] font-black uppercase text-[#B0843D] tracking-widest">Valid From</label>
+                         <label className="text-[12px] md:text-[14px] font-black uppercase text-[#B0843D] tracking-widest">Valid From</label>
                          <input 
                            type="date" 
                            value={editingNews ? editingNews.startDate : newNews.startDate} 
                            onChange={e => editingNews ? setEditingNews({...editingNews, startDate: e.target.value}) : setNewNews({...newNews, startDate: e.target.value})} 
-                           className="w-full p-6 bg-gray-50 rounded-3xl font-bold border-none outline-none focus:ring-2 focus:ring-[#B0843D]/20 transition-all" 
+                           className="w-full p-4 md:p-6 bg-gray-50 rounded-2xl md:rounded-3xl font-bold border-none outline-none focus:ring-2 focus:ring-[#B0843D]/20 transition-all text-sm md:text-base" 
                          />
                       </div>
                       <div className="space-y-4">
-                         <label className="text-[14px] font-black uppercase text-[#B0843D] tracking-widest">Valid Until (Expiry)</label>
+                         <label className="text-[12px] md:text-[14px] font-black uppercase text-[#B0843D] tracking-widest">Valid Until (Expiry)</label>
                          <input 
                            type="date" 
                            value={editingNews ? editingNews.endDate : newNews.endDate} 
                            onChange={e => editingNews ? setEditingNews({...editingNews, endDate: e.target.value}) : setNewNews({...newNews, endDate: e.target.value})} 
-                           className="w-full p-6 bg-gray-50 rounded-3xl font-bold border-none outline-none focus:ring-2 focus:ring-[#B0843D]/20 transition-all" 
+                           className="w-full p-4 md:p-6 bg-gray-50 rounded-2xl md:rounded-3xl font-bold border-none outline-none focus:ring-2 focus:ring-[#B0843D]/20 transition-all text-sm md:text-base" 
                          />
                       </div>
                    </div>
 
-                   <div className="grid grid-cols-3 gap-8">
+                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
                       <div className="space-y-4">
-                         <label className="text-[14px] font-black uppercase text-[#B0843D] tracking-widest">Target Category</label>
+                         <label className="text-[12px] md:text-[14px] font-black uppercase text-[#B0843D] tracking-widest">Target Category</label>
                          <select 
                            value={editingNews ? editingNews.targetCategory : newNews.targetCategory} 
                            onChange={e => {
@@ -1918,14 +2112,14 @@ const AdminDashboard = () => {
                               if (editingNews) setEditingNews({...editingNews, targetCategory: val, targetSubCategory: "All"});
                               else setNewNews({...newNews, targetCategory: val, targetSubCategory: "All"});
                            }} 
-                           className="w-full p-6 bg-gray-50 rounded-3xl font-bold border-none outline-none"
+                           className="w-full p-4 md:p-6 bg-gray-50 rounded-2xl md:rounded-3xl font-bold border-none outline-none text-sm md:text-base"
                          >
                             <option value="All">Apply to All Categories</option>
                             {allCategories.map(c => <option key={c} value={c}>{c}</option>)}
                          </select>
                       </div>
                       <div className="space-y-4">
-                         <label className="text-[14px] font-black uppercase text-[#B0843D] tracking-widest">Target Sub-Category</label>
+                         <label className="text-[12px] md:text-[14px] font-black uppercase text-[#B0843D] tracking-widest">Target Sub-Category</label>
                          <select 
                            value={editingNews ? editingNews.targetSubCategory : newNews.targetSubCategory} 
                            onChange={e => {
@@ -1933,35 +2127,35 @@ const AdminDashboard = () => {
                               if (editingNews) setEditingNews({...editingNews, targetSubCategory: val});
                               else setNewNews({...newNews, targetSubCategory: val});
                            }} 
-                           className="w-full p-6 bg-gray-50 rounded-3xl font-bold border-none outline-none"
+                           className="w-full p-4 md:p-6 bg-gray-50 rounded-2xl md:rounded-3xl font-bold border-none outline-none text-sm md:text-base"
                          >
                             <option value="All">Apply to All Sub-Categories</option>
                             {(dynamicSubCategories[editingNews ? editingNews.targetCategory : newNews.targetCategory] || []).map(s => <option key={s} value={s}>{s}</option>)}
                          </select>
                       </div>
                       <div className="space-y-4">
-                         <label className="text-[14px] font-black uppercase text-[#B0843D] tracking-widest">Discount Percentage (%)</label>
+                         <label className="text-[12px] md:text-[14px] font-black uppercase text-[#B0843D] tracking-widest">Discount Percentage (%)</label>
                          <input 
                            type="number" 
                            placeholder="E.g. 20" 
                            value={editingNews ? editingNews.discountPercent : newNews.discountPercent} 
                            onChange={e => editingNews ? setEditingNews({...editingNews, discountPercent: e.target.value}) : setNewNews({...newNews, discountPercent: e.target.value})} 
-                           className="w-full p-6 bg-gray-50 rounded-3xl font-bold border-none outline-none" 
+                           className="w-full p-4 md:p-6 bg-gray-50 rounded-2xl md:rounded-3xl font-bold border-none outline-none text-sm md:text-base" 
                          />
                       </div>
                    </div>
                    
                    <div className="space-y-4">
-                      <label className="text-[14px] font-black uppercase text-[#B0843D] tracking-widest">Message Body / Details</label>
+                      <label className="text-[12px] md:text-[14px] font-black uppercase text-[#B0843D] tracking-widest">Message Body / Details</label>
                       <textarea 
                         required 
                         placeholder="Write the full details of your offer or announcement here..." 
                         value={editingNews ? editingNews.content : newNews.content} 
                         onChange={e => editingNews ? setEditingNews({...editingNews, content: e.target.value}) : setNewNews({...newNews, content: e.target.value})} 
-                        className="w-full h-48 outline-none text-2xl font-serif italic border-none resize-none opacity-50 focus:opacity-100 transition-all text-[#310101]" 
+                        className="w-full h-32 md:h-48 outline-none text-lg md:text-2xl font-serif italic border-none resize-none opacity-50 focus:opacity-100 transition-all text-[#310101]" 
                       />
                    </div>
-                   <button type="submit" className="w-full bg-[#B0843D] text-white py-10 rounded-[35px] font-black uppercase tracking-[0.5em] shadow-xl hover:bg-[#310101] transition-all text-[15px] hover:scale-[1.02] active:scale-95">
+                   <button type="submit" className="w-full bg-[#B0843D] text-white py-6 md:py-10 rounded-[25px] md:rounded-[35px] font-black uppercase tracking-[0.2em] md:tracking-[0.5em] shadow-xl hover:bg-[#310101] transition-all text-[14px] md:text-[15px] hover:scale-[1.02] active:scale-95">
                       {editingNews ? "Update Live Broadcast" : "Send to Live Feed"}
                    </button>
                 </form>
@@ -1972,9 +2166,9 @@ const AdminDashboard = () => {
 
       <AnimatePresence>
         {editingProduct && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/30 backdrop-blur-md">
-            <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} className="bg-white p-20 rounded-[70px] shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-y-auto relative">
-               <h3 className="text-6xl font-serif font-black italic mb-12">Edit Product</h3>
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-2 md:p-4 bg-black/30 backdrop-blur-md overflow-y-auto font-sans">
+            <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} className="bg-white p-6 md:p-20 rounded-[40px] md:rounded-[70px] shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-y-auto relative">
+               <h3 className="text-3xl md:text-6xl font-serif font-black italic mb-8 md:mb-12 text-[#310101]">Edit Product</h3>
                  <form onSubmit={handleUpdateProduct} className="grid grid-cols-1 md:grid-cols-2 gap-12 text-black">
                     <div className="md:col-span-2 space-y-4">
                        <label className="text-[14px] font-black uppercase opacity-30">Name</label>
@@ -1998,9 +2192,9 @@ const AdminDashboard = () => {
                           {(subCategoriesConfig[editingProduct.category] || []).map(s => <option key={s} value={s}>{s}</option>)}
                        </select>
                     </div>
-                    <div className="space-y-4"><label className="text-[14px] font-black uppercase opacity-30">Price (numeric)</label><input type="number" value={editingProduct.price} onChange={e => setEditingProduct({...editingProduct, price: e.target.value})} className="w-full p-6 bg-gray-50 rounded-3xl font-bold border-none outline-none" /></div>
-                    <div className="space-y-4"><label className="text-[14px] font-black uppercase opacity-30">Discount Price (numeric)</label><input type="number" value={editingProduct.discountPrice} onChange={e => setEditingProduct({...editingProduct, discountPrice: e.target.value})} className="w-full p-6 bg-gray-50 rounded-3xl font-bold border-none outline-none" /></div>
-                    <div className="space-y-4"><label className="text-[14px] font-black uppercase opacity-30">Stock Units</label><input type="number" value={editingProduct.stock} onChange={e => setEditingProduct({...editingProduct, stock: e.target.value})} className="w-full p-6 bg-gray-50 rounded-3xl font-bold border-none outline-none" /></div>
+                    <div className="space-y-4"><label className="text-[12px] md:text-[14px] font-black uppercase opacity-30">Price (numeric)</label><input type="number" value={editingProduct.price} onChange={e => setEditingProduct({...editingProduct, price: e.target.value})} className="w-full p-4 md:p-6 bg-gray-50 rounded-2xl md:rounded-3xl font-bold border-none outline-none" /></div>
+                    <div className="space-y-4"><label className="text-[12px] md:text-[14px] font-black uppercase opacity-30">Discount Price (numeric)</label><input type="number" value={editingProduct.discountPrice} onChange={e => setEditingProduct({...editingProduct, discountPrice: e.target.value})} className="w-full p-4 md:p-6 bg-gray-50 rounded-2xl md:rounded-3xl font-bold border-none outline-none" /></div>
+                    <div className="space-y-4"><label className="text-[12px] md:text-[14px] font-black uppercase opacity-30">Stock Units</label><input type="number" value={editingProduct.stock} onChange={e => setEditingProduct({...editingProduct, stock: e.target.value})} className="w-full p-4 md:p-6 bg-gray-50 rounded-2xl md:rounded-3xl font-bold border-none outline-none" /></div>
                     <div className="space-y-4">
                        <label className="text-[14px] font-black uppercase text-[#B0843D]">Arrival Status</label>
                        <button 
@@ -2025,12 +2219,12 @@ const AdminDashboard = () => {
                     </div>
 
                     <div className="md:col-span-2 space-y-4">
-                       <label className="text-[14px] font-black uppercase opacity-30">Product Image Asset</label>
+                       <label className="text-[14px] font-black uppercase opacity-30">Main Product Asset (Highlighted)</label>
                        <div className="relative aspect-video bg-gray-50 rounded-[40px] border-4 border-dashed flex flex-col items-center justify-center overflow-hidden">
                           {isUploading ? (
                              <div className="text-center font-black uppercase tracking-widest text-[#B0843D]">Uploading...</div>
-                          ) : editingProduct.image ? (
-                             <img src={editingProduct.image} className="w-full h-full object-contain" />
+                          ) : (editingProduct.image || imagePreview) ? (
+                             <img src={imagePreview || editingProduct.image} className="w-full h-full object-contain" />
                           ) : (
                              <div className="text-center"><PlusCircle className="w-12 h-12 text-black/10 mx-auto mb-4" /><p className="font-serif italic opacity-30 text-xl">Select Collection asset</p></div>
                           )}
@@ -2038,13 +2232,32 @@ const AdminDashboard = () => {
                        </div>
                     </div>
 
+                    <div className="md:col-span-2 space-y-4">
+                       <label className="text-[14px] font-black uppercase text-[#B0843D]">Optional Gallery Images</label>
+                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                         {[0, 1, 2, 3].map((idx) => (
+                           <div key={idx} className="relative aspect-square bg-gray-50 rounded-2xl border-2 border-dashed flex flex-col items-center justify-center overflow-hidden group">
+                             {editingProduct.extraImages?.[idx] ? (
+                               <img src={editingProduct.extraImages[idx]} className="w-full h-full object-cover" />
+                             ) : (
+                               <div className="text-center p-2 opacity-20 group-hover:opacity-100 transition-opacity">
+                                 <PlusCircle className="w-6 h-6 mx-auto mb-1" />
+                                 <p className="text-[10px] font-black uppercase tracking-tighter">Optional {idx + 1}</p>
+                               </div>
+                             )}
+                             <input type="file" onChange={(e) => handleExtraImageChange(e, idx)} className="absolute inset-0 opacity-0 cursor-pointer" />
+                           </div>
+                         ))}
+                       </div>
+                    </div>
+
                     <div className="md:col-span-2">
-                       <button type="submit" disabled={isUploading} className="w-full bg-black text-white py-8 rounded-[35px] font-black uppercase shadow-2xl mt-4 disabled:opacity-50">
+                       <button type="submit" disabled={isUploading} className="w-full bg-black text-white py-6 md:py-8 rounded-[25px] md:rounded-[35px] font-black uppercase shadow-2xl mt-4 disabled:opacity-50 text-[14px] md:text-base">
                           {isUploading ? "Processing..." : "Confirm Changes"}
                        </button>
                     </div>
                  </form>
-               <button onClick={() => setEditingProduct(null)} className="absolute top-12 right-12 p-3 bg-gray-100 rounded-full"><X /></button>
+               <button onClick={() => setEditingProduct(null)} className="absolute top-6 right-6 md:top-12 md:right-12 p-2 md:p-3 bg-gray-100 rounded-full"><X /></button>
             </motion.div>
           </div>
         )}

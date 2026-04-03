@@ -6,7 +6,7 @@ const Attar = () => {
       title="Pure Attars" 
       subtitle="Exquisite collection of premium concentrated oils, traditional bakhur, and aromatic agarbatti."
       initialProductCategory="attar"
-      extraCategories={["attar", "spray", "bakhur", "agarbatti"]}
+      extraCategories={["attar", "bakhur", "agarbatti"]}
     />
   );
 };

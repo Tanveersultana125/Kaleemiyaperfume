@@ -23,8 +23,8 @@ const galleryImages = [
 
 const StoreGallery = () => {
   return (
-    <section className="py-24 bg-background">
-      <div className="max-w-[1440px] mx-auto px-6 md:px-12 lg:px-20">
+    <section className="section-padding overflow-hidden bg-background">
+      <div className="max-w-[1440px] mx-auto">
         <div className="text-center mb-16">
           <motion.span 
             initial={{ opacity: 0, y: 10 }}
@@ -52,13 +52,13 @@ const StoreGallery = () => {
           />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-6 h-[800px] md:h-[600px]">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-4 md:gap-6">
           {/* Large Main Image */}
           <motion.div 
             initial={{ opacity: 0, scale: 0.95 }}
             whileInView={{ opacity: 1, scale: 1 }}
             viewport={{ once: true }}
-            className="md:col-span-6 h-full relative group overflow-hidden rounded-sm"
+            className="md:col-span-6 aspect-square md:aspect-auto md:h-[600px] relative group overflow-hidden rounded-sm"
           >
             <img 
               src={galleryImages[1].src} 
@@ -67,17 +67,17 @@ const StoreGallery = () => {
             />
             <div className="absolute inset-0 group-hover:bg-black/5 transition-colors duration-500" />
           </motion.div>
-
+ 
           {/* Right Column Grid */}
-          <div className="md:col-span-6 grid grid-cols-2 gap-6 h-full">
-            {galleryImages.filter((_, i) => i !== 1).map((image, index) => (
+          <div className="md:col-span-6 grid grid-cols-2 gap-4 md:gap-6">
+            {galleryImages.filter((_, i) => i !== 1).slice(0, 4).map((image, index) => (
               <motion.div 
                 key={index}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: index * 0.1 }}
-                className="relative group overflow-hidden rounded-sm h-full"
+                className="relative group overflow-hidden rounded-sm aspect-square"
               >
                 <img 
                   src={image.src} 

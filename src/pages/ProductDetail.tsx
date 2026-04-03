@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ChevronRight, Star, ShieldCheck, Truck, RotateCcw, ShoppingCart } from "lucide-react";
+import { ChevronRight, Star, ShieldCheck, Truck, RotateCcw, ShoppingCart, Trash2 } from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import ProductImageSlider from "@/components/ProductImageSlider";
@@ -17,16 +17,20 @@ import {
   where, 
   onSnapshot, 
   orderBy, 
-  serverTimestamp 
+  serverTimestamp,
+  deleteDoc,
+  doc
 } from "firebase/firestore";
 import productExtra1 from "@/assets/product-extra-1.png";
 import productExtra2 from "@/assets/product-extra-2.png";
+import productExtra3 from "@/assets/product-extra-3.png";
+import productExtra4 from "@/assets/product-extra-4.png";
 import { toast } from "sonner";
 
 const ProductDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, role } = useAuth();
   const { addToCart } = useCart();
   const { products, loading } = useProducts();
   const product = products.find((p) => p.id === id);
@@ -46,11 +50,17 @@ const ProductDetail = () => {
     if (!id) return;
     const q = query(
       collection(db, "reviews"),
-      where("productId", "==", id),
-      orderBy("createdAt", "desc")
+      where("productId", "==", id)
     );
     const unsub = onSnapshot(q, (snap) => {
-      setReviews(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      // Sort on client-side to avoid needing a Firestore composite index
+      const fetchedReviews = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      fetchedReviews.sort((a: any, b: any) => {
+        const dateA = a.createdAt?.toDate() || new Date(0);
+        const dateB = b.createdAt?.toDate() || new Date(0);
+        return dateB.getTime() - dateA.getTime();
+      });
+      setReviews(fetchedReviews);
     });
     return () => unsub();
   }, [id]);
@@ -81,6 +91,16 @@ const ProductDetail = () => {
     });
   };
 
+  const handleDeleteReview = async (reviewId: string) => {
+    if (!window.confirm("Are you sure you want to remove this reflection?")) return;
+    try {
+      await deleteDoc(doc(db, "reviews", reviewId));
+      toast.success("Reflection removed from collection.");
+    } catch (error) {
+      toast.error("Failed to remove reflection.");
+    }
+  };
+
   const handleReviewSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) {
@@ -94,18 +114,23 @@ const ProductDetail = () => {
 
     setIsSubmitting(true);
     try {
-      await addDoc(collection(db, "reviews"), {
+      const reviewData = {
         productId: id,
-        userName: user.displayName || "Exquisite Guest",
+        userName: user.displayName || user.email?.split('@')[0] || "Exquisite Guest",
         userEmail: user.email,
+        userId: user.uid,
         rating: newReview.rating,
-        comment: newReview.comment,
+        comment: newReview.comment.trim(),
         createdAt: serverTimestamp()
-      });
+      };
+
+      await addDoc(collection(db, "reviews"), reviewData);
+      
       setNewReview({ rating: 5, comment: "" });
-      toast.success("Thank you for your reflection.");
+      toast.success("Thank you for your reflection. It has been shared with the community.");
     } catch (err: any) {
-      toast.error("Failed to submit review. Please try again.");
+      console.error("Review Error:", err);
+      toast.error("Failed to submit review. Please try again later.");
     } finally {
       setIsSubmitting(false);
     }
@@ -135,10 +160,8 @@ const ProductDetail = () => {
             <ProductImageSlider 
               images={[
                 product.image,
-                // Using standard extra images to demonstrate the slider functionality
-                productExtra1,
-                productExtra2
-              ]} 
+                ...(product.extraImages || [])
+              ].filter(Boolean)} 
             />
             {product.isNew && (
               <span className="absolute top-6 left-6 gold-gradient-bg text-primary-foreground text-[14px] font-sans font-semibold tracking-[0.2em] uppercase px-4 py-1.5 rounded-sm z-20">
@@ -165,7 +188,7 @@ const ProductDetail = () => {
                 </div>
               </div>
               
-              <h1 className="font-serif text-3xl md:text-4xl lg:text-5xl tracking-tight leading-tight text-[#C29D59]">
+              <h1 className="font-serif text-2xl sm:text-3xl md:text-4xl lg:text-5xl tracking-tight leading-tight text-[#C29D59]">
                 {product.name}
               </h1>
               
@@ -173,11 +196,11 @@ const ProductDetail = () => {
                 <div className="flex flex-wrap items-end gap-3">
                   {product.discountPrice ? (
                     <>
-                      <span className="text-[40px] font-sans font-bold text-[#111] leading-none">
-                        ₹{parseInt(product.discountPrice.replace(/[^\d]/g, "")).toLocaleString()}
+                      <span className="text-3xl sm:text-[40px] font-sans font-bold text-[#111] leading-none">
+                        {"\u20B9"}{parseInt(product.discountPrice.replace(/[^\d]/g, "")).toLocaleString()}
                       </span>
-                      <span className="text-[#747e8e] line-through text-[20px] font-medium pb-[2px]">
-                        {product.price}
+                      <span className="text-[#747e8e] line-through text-lg sm:text-[20px] font-medium pb-[2px]">
+                        {"\u20B9"}{parseInt(product.price.replace(/[^\d]/g, "")).toLocaleString()}
                       </span>
                       {(() => {
                         const rP = parseInt(product.price.replace(/[^\d]/g, "") || "0");
@@ -194,8 +217,8 @@ const ProductDetail = () => {
                       })()}
                     </>
                   ) : (
-                    <span className="text-[40px] font-sans font-bold text-[#111] leading-none">
-                      {product.price}
+                    <span className="text-3xl sm:text-[40px] font-sans font-bold text-[#111] leading-none">
+                      {"\u20B9"}{parseInt(product.price.replace(/[^\d]/g, "")).toLocaleString()}
                     </span>
                   )}
                 </div>
@@ -286,9 +309,9 @@ const ProductDetail = () => {
         </div>
 
         {/* Customer Reflections Section */}
-        <section className="mt-40 max-w-4xl mx-auto space-y-16">
+        <section className="mt-24 md:mt-40 max-w-4xl mx-auto space-y-16">
            <div className="text-center space-y-4">
-              <h2 className="text-4xl font-serif italic text-[#310101] tracking-tight">Customer Reflections</h2>
+              <h2 className="text-3xl sm:text-4xl font-serif italic text-[#310101] tracking-tight">Customer Reflections</h2>
               <p className="text-[13px] font-black uppercase tracking-[0.3em] text-[#B0843D]">Shared Experiences</p>
            </div>
 
@@ -320,7 +343,7 @@ const ProductDetail = () => {
                      value={newReview.comment}
                      onChange={(e) => setNewReview({ ...newReview, comment: e.target.value })}
                      placeholder="Share your experience with this essence..."
-                     className="w-full h-32 bg-gray-50 rounded-[30px] p-8 outline-none text-lg font-serif italic focus:ring-2 ring-[#B0843D]/20 transition-all border-none"
+                     className="w-full h-32 bg-gray-50 rounded-[20px] sm:rounded-[30px] p-4 sm:p-8 outline-none text-lg font-serif italic focus:ring-2 ring-[#B0843D]/20 transition-all border-none"
                    />
                    <Button 
                      type="submit" 
@@ -355,13 +378,28 @@ const ProductDetail = () => {
                            </div>
                            <div>
                               <h5 className="text-[16px] font-black text-[#310101] uppercase tracking-widest">{rev.userName}</h5>
-                              <p className="text-[11px] text-black/30 font-black uppercase tracking-widest">{rev.createdAt?.toDate().toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' })}</p>
+                              <p className="text-[11px] text-black/30 font-black uppercase tracking-widest">
+                                {rev.createdAt 
+                                  ? rev.createdAt.toDate().toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' })
+                                  : "Just Now"}
+                              </p>
                            </div>
                         </div>
-                        <div className="flex gap-1">
-                           {[...Array(5)].map((_, i) => (
-                              <Star key={i} className={`w-3 h-3 ${i < rev.rating ? "text-amber-500 fill-current" : "text-gray-100"}`} />
-                           ))}
+                        <div className="flex items-start gap-4">
+                           <div className="flex gap-1 pt-1">
+                              {[...Array(5)].map((_, i) => (
+                                 <Star key={i} className={`w-3 h-3 ${i < rev.rating ? "text-amber-500 fill-current" : "text-gray-100"}`} />
+                              ))}
+                           </div>
+                           {(role === 'admin' || role === 'super_admin') && (
+                             <button 
+                               onClick={() => handleDeleteReview(rev.id)}
+                               className="text-red-300 hover:text-red-500 transition-all p-1 hover:bg-red-50 rounded-lg -mt-1"
+                               title="Delete Reflection"
+                             >
+                               <Trash2 size={16} />
+                             </button>
+                           )}
                         </div>
                      </div>
                      <p className="text-lg font-serif italic text-black/70 leading-relaxed pl-16">

@@ -70,7 +70,7 @@ const TrackOrder = () => {
            transition={{ duration: 0.8 }}
            className="text-center"
         >
-          <h1 className="font-serif text-4xl md:text-5xl text-[#310101] mb-6">Track Your Boutique Order</h1>
+          <h1 className="font-serif text-3xl sm:text-4xl md:text-5xl text-[#310101] mb-6 px-4">Track Your Boutique Order</h1>
           <p className="text-[#310101] font-sans text-sm mb-12 max-w-lg mx-auto">
              Enter your order ID below to view the current status of your premium fragrance shipment.
           </p>
@@ -98,16 +98,16 @@ const TrackOrder = () => {
               <motion.div 
                  initial={{ opacity: 0, scale: 0.95 }}
                  animate={{ opacity: 1, scale: 1 }}
-                 className="bg-white border border-[#310101]/10 rounded-[40px] p-10 shadow-2xl text-left max-w-2xl mx-auto"
+                 className="bg-white border border-[#310101]/10 rounded-[30px] sm:rounded-[40px] p-6 sm:p-10 shadow-2xl text-left max-w-2xl mx-auto"
               >
-                <div className="flex items-center justify-between mb-10 pb-10 border-b border-[#310101]/5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-10 pb-10 border-b border-[#310101]/5 gap-6">
                   <div className="flex items-center gap-6">
-                     <div className="p-4 bg-[#F9F6F2] rounded-2xl">
+                     <div className="p-4 bg-[#F9F6F2] rounded-2xl shrink-0">
                         <Package className="w-8 h-8 text-[#B0843D]" />
                      </div>
                      <div>
                         <h3 className="font-serif text-2xl text-[#310101]">{result.id}</h3>
-                         <p className="text-sm uppercase tracking-widest font-black text-white px-3 py-1 bg-green-600 rounded-lg mt-2 inline-block">
+                         <p className="text-[11px] sm:text-sm uppercase tracking-widest font-black text-white px-3 py-1 bg-green-600 rounded-lg mt-2 inline-block">
                             {result.status}
                          </p>
                          <p className="text-[13px] font-sans font-bold text-black/40 mt-3 italic">
@@ -115,7 +115,7 @@ const TrackOrder = () => {
                          </p>
                       </div>
                   </div>
-                  <div className="text-right">
+                  <div className="text-left sm:text-right">
                      <p className="text-[14px] font-black uppercase tracking-[0.2em] text-[#310101]/90 mb-1">Total Amount</p>
                      <p className="font-serif text-2xl font-black text-green-700">{result.amount}</p>
                   </div>

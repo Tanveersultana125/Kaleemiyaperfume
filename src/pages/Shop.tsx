@@ -34,6 +34,7 @@ const Shop = ({
   const query = searchParams.get("search");
   const urlCategory = searchParams.get("category")?.toLowerCase() || "";
   const urlSubCategory = searchParams.get("subcategory")?.toLowerCase() || "";
+  const discountParam = searchParams.get("discount");
   
   const [activeGender, setActiveGender] = useState<Category>("ALL");
   const [activeCategory, setActiveCategory] = useState<string>("all");
@@ -107,7 +108,10 @@ const Shop = ({
     }
 
     // Filter by type category or special tags
-    if (activeCategory !== "all") {
+    // If we have a discount filter from the URL, we can be more global by default
+    const hasDiscountParam = discountParam !== null;
+
+    if (activeCategory !== "all" && !hasDiscountParam) {
       const lowerCat = activeCategory.toLowerCase();
       const normalizedTarget = lowerCat.replace(/\s+/g, "");
       
@@ -115,29 +119,54 @@ const Shop = ({
         filtered = filtered.filter(p => p.isBestseller === true);
       } else if (lowerCat === "new arrival") {
         filtered = filtered.filter(p => p.isNew === true);
-      } else if (normalizedTarget === "tasbhi" || normalizedTarget === "tasbeeh") {
-        filtered = filtered.filter(p => {
-           const pCat = (p.category || "").toLowerCase().replace(/\s+/g, "");
-           return pCat === "tasbhi" || pCat === "tasbeeh";
-        });
-      } else if (normalizedTarget === "giftsets") {
-        filtered = filtered.filter(p => (p.category || "").toLowerCase().replace(/\s+/g, "") === "giftsets");
-      } else if (normalizedTarget === "prayermats") {
-         filtered = filtered.filter(p => (p.category || "").toLowerCase().replace(/\s+/g, "") === "prayermats");
       } else {
+        // Generalized inclusive filter for any category/subcategory name
         filtered = filtered.filter(p => {
            const pCat = (p.category || "").toLowerCase().replace(/\s+/g, "");
-           return pCat === normalizedTarget || (p.category || "").toLowerCase() === lowerCat;
+           const pSub = (p.subCategory || "").toLowerCase().replace(/\s+/g, "");
+           
+           // Special handling for Tasbeeh/Tasbhi synonyms
+           const isTasbeehSearch = normalizedTarget === "tasbeeh" || normalizedTarget === "tasbhi";
+           if (isTasbeehSearch) {
+              return pCat === "tasbeeh" || pCat === "tasbhi" || 
+                     pSub === "tasbeeh" || pSub === "tasbhi";
+           }
+
+           return pCat === normalizedTarget || pCat === lowerCat || 
+                  pSub === normalizedTarget || pSub === lowerCat;
         });
       }
 
-      // Filter by Sub-category nested inside main category
+      // Further refined filter if a sub-category pill was selected
       if (activeSubCategory !== "all") {
          const targetSub = activeSubCategory.toLowerCase().replace(/\s+/g, "");
          filtered = filtered.filter(p => {
             const pSub = (p.subCategory || "").toLowerCase().replace(/\s+/g, "");
             return pSub === targetSub || (p.subCategory || "").toLowerCase() === activeSubCategory.toLowerCase();
          });
+      }
+    }
+
+    // Filter by Discount Percentage if requested in URL (e.g. ?discount=30)
+    if (discountParam) {
+      const targetDiscount = parseInt(discountParam);
+      if (!isNaN(targetDiscount)) {
+        const matchingDiscountItems = filtered.filter(p => {
+          if (!p.price || !p.discountPrice) return false;
+          const rP = parseInt(p.price.replace(/[^\d]/g, "") || "0");
+          const rD = parseInt(p.discountPrice.replace(/[^\d]/g, "") || "0");
+          if (rP > 0 && rD > 0) {
+             const actualDiscount = Math.round(((rP - rD) / rP) * 100);
+             // Return true if it matches exactly or is HIGHER than the target discount (e.g. 33% on a 30% banner)
+             return actualDiscount >= targetDiscount;
+          }
+          return false;
+        });
+
+        // Only apply the discount filter if it actually returns some products.
+        if (matchingDiscountItems.length > 0) {
+          filtered = matchingDiscountItems;
+        }
       }
     }
 
@@ -164,7 +193,7 @@ const Shop = ({
     }
 
     return filtered;
-  }, [allProducts, activeGender, activeSort, activeCategory, activeSubCategory, query]);
+  }, [allProducts, activeGender, activeSort, activeCategory, activeSubCategory, query, discountParam]);
 
   const activeCategorySubs = useMemo(() => {
     if (activeCategory === "all") return [];
@@ -190,7 +219,10 @@ const Shop = ({
   let displayTitle = title;
   let displaySubtitle = subtitle;
 
-  if (title === "Kaleemiya Boutique" && activeCategory && activeCategory !== "all") {
+  if (discountParam) {
+    displayTitle = `${discountParam}% OFF Special Collection`;
+    displaySubtitle = `Handpicked selections from across our catalog — all reaching up to ${discountParam}% or more in savings.`;
+  } else if (title === "Kaleemiya Boutique" && activeCategory && activeCategory !== "all") {
     // Default — capitalize
     displayTitle = activeCategory.charAt(0).toUpperCase() + activeCategory.slice(1);
     displaySubtitle = `Explore our curated selection of ${displayTitle}.`;
@@ -202,7 +234,7 @@ const Shop = ({
       displaySubtitle = "Discover our exquisite range of Men's, Women's, and Unisex fragrances — from French to Arabic concentrations.";
     } else if (cat === "attar") {
       displayTitle = "Exquisite Attars";
-      displaySubtitle = "Discover our premium selection of concentrated perfume oils, crafted with traditional Middle Eastern artistry.";
+      displaySubtitle = "Discover our premium selection of concentrated pure oils and artisanal attars, crafted with traditional Middle Eastern heritage.";
     } else if (cat === "oud") {
       displayTitle = "Majestic Oud";
       displaySubtitle = "Experience the rich, woody, and luxurious essence of pure Oud — Cambodi, Assami, Indian and Malaysian.";
@@ -237,91 +269,27 @@ const Shop = ({
 
       <main className="flex-grow w-full max-w-[1440px] mx-auto px-6 md:px-12 lg:px-20 mb-32">
         {/* Page Header */}
-        <div className="flex flex-col items-center text-center py-16 space-y-4">
+        <div className="flex flex-col items-center text-center py-10 md:py-16 space-y-4">
           <motion.h1 
             key={displayTitle}
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="text-5xl md:text-7xl font-serif text-[#310101]"
+            className="text-4xl sm:text-5xl md:text-7xl font-serif text-[#310101]"
           >
             {displayTitle}
           </motion.h1>
-          <p className="text-[#310101] font-sans text-sm md:text-base max-w-2xl">
+          <p className="text-[#310101] font-sans text-xs md:text-base max-w-2xl px-4">
             {displaySubtitle}
           </p>
         </div>
 
         {/* Subcategory and Category Filters Ribbon */}
-        {((activeCategory === "all" && globalCategories.length > 0) || (activeCategory !== "all" && activeCategorySubs.length > 0)) && (
-          <motion.div 
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="flex flex-wrap justify-center gap-4 py-8 border-y border-[#310101]/5"
-          >
-            {activeCategory === "all" ? (
-              // When browsing entire shop, show main categories as pills
-              <>
-                <button 
-                  onClick={() => setActiveCategory("all")}
-                  className={`px-6 py-2.5 rounded-full text-[13px] font-black uppercase tracking-widest transition-all ${
-                    activeCategory === "all" ? "bg-[#B0843D] text-[#E5D5C5] shadow-lg" : "bg-[#F9F6F2] border border-[#310101]/10 text-[#310101]/80 hover:bg-[#310101] hover:text-[#E5D5C5]"
-                  }`}
-                >
-                  All Collections
-                </button>
-                {globalCategories.map(cat => (
-                  <button 
-                    key={cat}
-                    onClick={() => {
-                        const params = new URLSearchParams(searchParams);
-                        params.set("category", cat.toLowerCase());
-                        params.delete("subcategory");
-                        navigate(`/shop?${params.toString()}`);
-                    }}
-                    className="px-6 py-2.5 rounded-full text-[13px] font-black uppercase tracking-widest transition-all bg-[#F9F6F2] border border-[#310101]/10 text-[#310101]/80 hover:bg-[#310101] hover:text-[#E5D5C5]"
-                  >
-                    {cat}
-                  </button>
-                ))}
-              </>
-            ) : (
-              // When browsing a specific category, show its subcategories
-              <>
-                <button 
-                  onClick={() => {
-                    const params = new URLSearchParams(searchParams);
-                    params.delete("subcategory");
-                    navigate(`/shop?${params.toString()}`);
-                  }}
-                  className={`px-6 py-2.5 rounded-full text-[13px] font-black uppercase tracking-widest transition-all ${
-                    activeSubCategory === "all" ? "bg-[#B0843D] text-[#E5D5C5] shadow-lg" : "bg-[#F9F6F2] border border-[#310101]/10 text-[#310101]/80 hover:bg-[#310101] hover:text-[#E5D5C5]"
-                  }`}
-                >
-                  All
-                </button>
-                {activeCategorySubs.map(sub => (
-                  <button 
-                    key={sub}
-                    onClick={() => {
-                      const params = new URLSearchParams(searchParams);
-                      params.set("subcategory", sub.toLowerCase());
-                      navigate(`/shop?${params.toString()}`);
-                    }}
-                    className={`px-6 py-2.5 rounded-full text-[13px] font-black uppercase tracking-widest transition-all ${
-                      activeSubCategory === sub.toLowerCase() ? "bg-[#B0843D] text-[#E5D5C5] shadow-lg" : "bg-[#F9F6F2] border border-[#310101]/10 text-[#310101]/80 hover:bg-[#310101] hover:text-[#E5D5C5]"
-                    }`}
-                  >
-                    {sub}
-                  </button>
-                ))}
-              </>
-            )}
-          </motion.div>
-        )}
-
-        {/* Filters and Sorting Bar */}
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-10 py-12 border-b border-[#310101]/5">
-           <div className="flex flex-wrap items-center gap-10">
+        {/* Unified Filter & Navigation Ribbon */}
+        {!discountParam && (
+          <div className="flex flex-col lg:flex-row items-center justify-between gap-6 py-10 border-y border-[#310101]/5 mt-12 bg-white/40 px-8 rounded-[40px] shadow-sm">
+           
+           {/* Left side: Search Reset & Breadcrumb style Action */}
+           <div className="flex shrink-0">
               <button 
                 onClick={() => {
                   setActiveCategory("all");
@@ -329,47 +297,96 @@ const Shop = ({
                   setActiveGender("ALL");
                   navigate("/shop", { replace: true });
                 }}
-                className={`text-[15px] font-black uppercase tracking-[0.2em] transition-all px-6 py-2.5 rounded-full ${
-                  activeCategory === "all" ? "bg-[#310101] text-white shadow-xl" : "bg-transparent text-[#310101]/90 hover:text-[#310101]"
+                className={`text-[13px] font-black uppercase tracking-[0.2em] transition-all px-8 py-3.5 rounded-full border-2 whitespace-nowrap ${
+                  activeCategory === "all" ? "bg-[#310101] border-[#310101] text-white shadow-xl" : "bg-transparent border-[#310101]/10 text-[#310101]/80 hover:border-[#310101]/30"
                 }`}
               >
-                VIEW ENTIRE CATALOG
+                Entire Catalog
               </button>
-              
-              {/* Gender filters — hidden for Books, Prayer Mats, Tasbhi, Gift Sets (not gender-specific) */}
-              {!["books", "prayermats", "prayer mats", "tasbhi", "tasbeeh", "giftsets", "gift sets"].includes(
-                activeCategory.toLowerCase().replace(/\s+/g, "")
-              ) && (
-                <>
-                  <div className="h-6 w-[1px] bg-[#310101]/10 hidden md:block" />
-                  <div className="flex gap-8">
-                    {categoriesArr.map((g) => (
-                      <button 
-                        key={g} 
-                        onClick={() => setActiveGender(g)}
-                        className={`text-[15px] font-black uppercase tracking-[0.2em] transition-all ${
-                          activeGender === g ? "text-[#B0843D]" : "text-[#310101]/80 hover:text-[#310101]"
-                        }`}
-                      >
-                        {g}
-                      </button>
-                    ))}
-                  </div>
-                </>
-              )}
            </div>
 
-           <div className="flex items-center gap-8 self-end lg:self-center">
-              <span className="text-[14px] font-black uppercase tracking-[0.15em] text-[#310101]/80 hidden sm:block">
-                 Found {filteredAndSortedProducts.length} Artisan Creations
+           {/* Center: Scrollable Categories/Subcategories Pills */}
+           <div className="flex-1 overflow-x-auto scrollbar-hide">
+              <motion.div 
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="flex items-center gap-3 px-4 min-w-max"
+              >
+                {activeCategory === "all" ? (
+                  // Main Category Navigation
+                  globalCategories.map(cat => (
+                    <button 
+                      key={cat}
+                      onClick={() => {
+                          const params = new URLSearchParams();
+                          params.set("category", cat.toLowerCase());
+                          navigate(`/shop?${params.toString()}`);
+                      }}
+                      className="px-6 py-2.5 rounded-full text-[12px] font-black uppercase tracking-widest transition-all bg-[#F9F6F2] border border-[#310101]/10 text-[#310101]/80 hover:bg-[#310101] hover:text-[#E5D5C5] whitespace-nowrap"
+                    >
+                      {cat}
+                    </button>
+                  ))
+                ) : (
+                  // Deep Category Refining
+                  <>
+                    {extraCategories.map(cat => (
+                      <button 
+                        key={cat}
+                        onClick={() => {
+                            setActiveCategory(cat.toLowerCase());
+                            setActiveSubCategory("all");
+                        }}
+                        className={`px-6 py-2.5 rounded-full text-[12px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${
+                          activeCategory === cat.toLowerCase() ? "bg-[#B0843D] text-[#E5D5C5] shadow-lg" : "bg-[#F9F6F2] border border-[#310101]/10 text-[#310101]/80 hover:bg-[#310101] hover:text-[#E5D5C5]"
+                        }`}
+                      >
+                        {cat}
+                      </button>
+                    ))}
+                    {activeCategorySubs.length > 0 && (
+                      <>
+                        <div className="w-[1px] h-6 bg-[#310101]/10 mx-2 shrink-0"></div>
+                        {activeCategorySubs
+                          .filter(sub => !extraCategories.map(c => c.toLowerCase()).includes(sub.toLowerCase()))
+                          .map(sub => (
+                          <button 
+                            key={sub}
+                            onClick={() => {
+                              const s = sub.toLowerCase();
+                              if (["men", "women", "unisex"].includes(s)) {
+                                setActiveGender(s.toUpperCase() as any);
+                                setActiveSubCategory("all");
+                              } else {
+                                setActiveSubCategory(s);
+                              }
+                            }}
+                            className={`px-6 py-2.5 rounded-full text-[12px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${
+                              (activeSubCategory === sub.toLowerCase() || (activeGender.toLowerCase() === sub.toLowerCase() && activeSubCategory === "all")) ? "bg-[#B0843D] text-[#E5D5C5] shadow-lg" : "bg-[#F9F6F2] border border-[#310101]/10 text-[#310101]/80 hover:bg-[#310101] hover:text-[#E5D5C5]"
+                            }`}
+                          >
+                            {sub}
+                          </button>
+                        ))}
+                      </>
+                    )}
+                  </>
+                )}
+              </motion.div>
+           </div>
+
+           {/* Right: Sorting & Meta */}
+           <div className="flex items-center gap-6 shrink-0">
+              <span className="text-[12px] font-black uppercase tracking-widest text-[#310101]/40 hidden xl:block">
+                 {filteredAndSortedProducts.length} Results
               </span>
               <div className="relative group/sort">
                  <button 
                    onClick={() => setIsSortOpen(!isSortOpen)}
-                   className="flex items-center gap-4 border border-[#310101]/10 px-8 py-4 rounded-full text-[15px] font-black uppercase tracking-[0.1em] text-[#310101] hover:border-[#310101]/30 transition-all bg-white"
+                   className="flex items-center gap-3 border border-[#310101]/10 px-8 py-3.5 rounded-full text-[13px] font-black uppercase tracking-widest text-[#310101] hover:border-[#310101]/30 transition-all bg-white whitespace-nowrap"
                  >
                     {activeSort}
-                    <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-500 ${isSortOpen ? 'rotate-180' : ''}`} />
+                    <ChevronDown className={`w-3 h-3 transition-transform duration-500 ${isSortOpen ? 'rotate-180' : ''}`} />
                  </button>
                  <AnimatePresence>
                    {isSortOpen && (
@@ -377,13 +394,13 @@ const Shop = ({
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: 10 }}
-                        className="absolute right-0 top-full mt-2 w-64 bg-white border border-[#310101]/10 rounded-2xl shadow-2xl z-50 overflow-hidden py-3"
+                        className="absolute right-0 top-full mt-2 w-56 bg-white border border-[#310101]/10 rounded-2xl shadow-2xl z-50 overflow-hidden py-2"
                       >
                          {sortOptionsArr.map(opt => (
                             <button 
                               key={opt}
                               onClick={() => { setActiveSort(opt); setIsSortOpen(false); }}
-                              className={`w-full text-left px-8 py-3 text-[14px] font-black uppercase tracking-widest transition-all ${
+                              className={`w-full text-left px-7 py-2.5 text-[12px] font-black uppercase tracking-widest transition-all ${
                                 activeSort === opt ? "text-[#B0843D] bg-gray-50" : "text-[#310101] hover:text-[#310101] hover:bg-gray-100"
                               }`}
                             >
@@ -397,8 +414,10 @@ const Shop = ({
            </div>
         </div>
 
+        )}
+
         {/* Status Area */}
-        {(activeCategory !== "all" || activeSubCategory !== "all" || activeGender !== "ALL") && (
+        {(activeCategory !== "all" || activeSubCategory !== "all" || activeGender !== "ALL") && !discountParam && (
           <div className="py-10 flex flex-wrap items-center gap-4">
              <div className="flex items-center gap-2 text-[#310101]/70 font-black uppercase tracking-[0.2em] text-[14px]">Active Exploration:</div>
              <div className="flex flex-wrap gap-4">
@@ -427,7 +446,7 @@ const Shop = ({
         {/* Product Grid Area */}
         <div className="pt-8">
            {filteredAndSortedProducts.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-10 gap-y-20">
+              <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-x-4 gap-y-8 sm:gap-x-6 sm:gap-y-12 lg:gap-x-10 lg:gap-y-20">
                  {filteredAndSortedProducts.map((product) => (
                     <div key={product.id} className="w-full">
                        <ProductCard {...product} />
