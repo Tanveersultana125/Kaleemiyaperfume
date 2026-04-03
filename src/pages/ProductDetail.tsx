@@ -188,18 +188,18 @@ const ProductDetail = () => {
                 </div>
               </div>
               
-              <h1 className="font-serif text-2xl sm:text-3xl md:text-4xl lg:text-5xl tracking-tight leading-tight text-[#C29D59]">
+              <h1 className="font-serif text-3xl sm:text-4xl md:text-5xl lg:text-5xl font-black tracking-tight leading-tight text-[#310101]">
                 {product.name}
               </h1>
               
               <div className="flex flex-col gap-2 pt-2">
-                <div className="flex flex-wrap items-end gap-3">
+                <div className="flex flex-wrap items-end gap-3 pt-2">
                   {product.discountPrice ? (
                     <>
-                      <span className="text-3xl sm:text-[40px] font-sans font-bold text-[#111] leading-none">
+                      <span className="text-4xl sm:text-[45px] font-sans font-black text-black leading-none tracking-tight">
                         {"\u20B9"}{parseInt(product.discountPrice.replace(/[^\d]/g, "")).toLocaleString()}
                       </span>
-                      <span className="text-[#747e8e] line-through text-lg sm:text-[20px] font-medium pb-[2px]">
+                      <span className="text-[#747e8e] line-through text-xl md:text-[22px] font-sans font-bold pb-[2px] ml-1">
                         {"\u20B9"}{parseInt(product.price.replace(/[^\d]/g, "")).toLocaleString()}
                       </span>
                       {(() => {
@@ -208,7 +208,7 @@ const ProductDetail = () => {
                         if (rP > 0 && rD > 0) {
                           const pct = Math.round(((rP - rD) / rP) * 100);
                           return (
-                            <span className="bg-[#489b6f] text-white text-[14px] font-bold px-2 py-0.5 rounded tracking-wide ml-1 mb-[3px]">
+                            <span className="bg-[#489b6f] text-white text-[14px] font-sans font-black px-2 py-0.5 rounded tracking-wide ml-1 mb-[3px]">
                               {pct}% off
                             </span>
                           );
@@ -217,7 +217,7 @@ const ProductDetail = () => {
                       })()}
                     </>
                   ) : (
-                    <span className="text-3xl sm:text-[40px] font-sans font-bold text-[#111] leading-none">
+                    <span className="text-4xl sm:text-[45px] font-sans font-black text-black leading-none tracking-tight">
                       {"\u20B9"}{parseInt(product.price.replace(/[^\d]/g, "")).toLocaleString()}
                     </span>
                   )}
@@ -257,7 +257,17 @@ const ProductDetail = () => {
                   ADD TO CART
                   <ShoppingCart size={20} className="text-black fill-black" />
                 </Button>
-                <Button variant="outline" className="w-full py-7 text-[15px] font-sans font-bold tracking-wider uppercase rounded-full border-gray-300 hover:bg-gray-50 text-[#111]">
+                <Button 
+                  variant="outline" 
+                  className="w-full py-7 text-[15px] font-sans font-bold tracking-wider uppercase rounded-full border-gray-400 hover:border-black hover:bg-black hover:text-white transition-all text-[#111]"
+                  onClick={() => {
+                    handleAddToCart();
+                    setTimeout(() => {
+                      const cartBtn = document.querySelector('button .lucide-shopping-cart')?.closest('button') as HTMLButtonElement | null;
+                      if (cartBtn) cartBtn.click();
+                    }, 50);
+                  }}
+                >
                   Buy Now
                 </Button>
               </div>

@@ -6,7 +6,8 @@ import {
   SheetHeader, 
   SheetTitle, 
   SheetFooter,
-  SheetTrigger
+  SheetTrigger,
+  SheetClose
 } from "@/components/ui/sheet";
 import { ShoppingCart, ShoppingBag, Minus, Plus, X, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -63,13 +64,14 @@ const CartDrawer = () => {
                 Our master perfumers are waiting to fill your world with essence.
               </p>
             </div>
-            <Button 
-              variant="outline" 
-              className="mt-4 rounded-full border-[#310101]/10 px-8 py-6 font-black uppercase tracking-widest text-[12px] hover:bg-[#310101] hover:text-white transition-all shadow-sm"
-              onClick={() => { /* Close drawer */ }}
-            >
-              Continue Exploration
-            </Button>
+            <SheetClose asChild>
+              <Button 
+                variant="outline" 
+                className="mt-4 rounded-full border-[#310101]/10 px-8 py-6 font-black uppercase tracking-widest text-[12px] hover:bg-[#310101] hover:text-white transition-all shadow-sm"
+              >
+                Continue Exploration
+              </Button>
+            </SheetClose>
           </div>
         ) : (
           <>
@@ -97,7 +99,7 @@ const CartDrawer = () => {
                             <X className="w-4 h-4" />
                           </button>
                         </div>
-                        <p className="text-[15px] font-sans font-bold text-[#B0843D] tracking-wide">{"\u20B9"}{parseInt(item.price.replace(/[^\d]/g, "")).toLocaleString()}</p>
+                        <p className="text-[15px] font-sans font-black text-[#B0843D] tracking-wide">{"\u20B9"}{parseInt(item.price.replace(/[^\d]/g, "")).toLocaleString()}</p>
                       </div>
                       
                       <div className="flex items-center mt-4">
@@ -127,7 +129,7 @@ const CartDrawer = () => {
               <div className="space-y-4">
                 <div className="flex justify-between items-center px-2">
                   <span className="text-[13px] text-[#310101]/60 font-black uppercase tracking-[0.2em] mb-0.5">SUBTOTAL</span>
-                  <span className="text-lg font-serif text-[#310101]">{"\u20B9"}{totalPrice.toLocaleString()}</span>
+                  <span className="text-lg font-sans font-black text-[#310101]">{"\u20B9"}{totalPrice.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between items-center px-2">
                   <span className="text-[13px] text-[#310101]/60 font-black uppercase tracking-[0.2em]">SHIPPING</span>
@@ -136,7 +138,7 @@ const CartDrawer = () => {
                 <div className="h-[1px] w-full bg-[#310101]/5" />
                 <div className="flex justify-between items-center px-2">
                   <span className="text-[15px] font-serif text-[#310101] uppercase tracking-[0.2em] font-black">TOTAL</span>
-                  <span className="text-2xl font-serif font-black text-[#B0843D]">{"\u20B9"}{totalPrice.toLocaleString()}</span>
+                  <span className="text-2xl font-sans font-black text-[#B0843D]">{"\u20B9"}{totalPrice.toLocaleString()}</span>
                 </div>
               </div>
               
