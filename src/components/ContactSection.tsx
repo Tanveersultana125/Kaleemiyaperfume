@@ -1,37 +1,35 @@
-import { motion } from "framer-motion";
 import { Mail, Phone, MapPin, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import SectionHeading from "./SectionHeading";
 import { useState } from "react";
 import { toast } from "sonner";
+import { db } from "@/lib/firebase";
+import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { motion } from "framer-motion";
 
 const ContactSection = () => {
   const [formData, setFormData] = useState({ name: "", email: "", message: "" });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name || !formData.email) {
-      toast.error("Please provide your name and email.");
+    if (!formData.name || !formData.email || !formData.message) {
+      toast.error("Please fill out all fields.");
       return;
     }
 
-    // Simulate sending to Admin Dashboard
-    const newRequest = {
-      name: formData.name,
-      email: formData.email,
-      date: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }),
-      initial: formData.name.charAt(0).toUpperCase(),
-      role: "Portal Inquiry / Access Request"
-    };
-
-    const existingRequests = JSON.parse(localStorage.getItem("kaleemiya_admin_requests") || "[]");
-    localStorage.setItem("kaleemiya_admin_requests", JSON.stringify([newRequest, ...existingRequests]));
-    
-    // Trigger event for AdminDashboard to update
-    window.dispatchEvent(new Event("admin_requests_updated"));
-
-    toast.success("Your request has been sent to the admin team!");
-    setFormData({ name: "", email: "", message: "" });
+    try {
+      await addDoc(collection(db, "inquiries"), {
+        name: formData.name,
+        email: formData.email,
+        message: formData.message,
+        createdAt: serverTimestamp(),
+        status: "unread"
+      });
+      toast.success("Your inquiry has been sent directly to the Kaleemiya team!");
+      setFormData({ name: "", email: "", message: "" });
+    } catch (error: any) {
+      toast.error("Failed to send inquiry: " + error.message);
+    }
   };
 
   return (

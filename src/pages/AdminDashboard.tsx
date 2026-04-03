@@ -28,7 +28,7 @@ import {
   Bell, Calendar, ArrowUpRight, TrendingUp,
   FileText, Newspaper, Eye, CreditCard, Star,
   CheckCircle, Clock, ChevronDown, Loader2,
-  Image, Send
+  Image, Send, Mail
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -37,6 +37,7 @@ const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState("Dashboard");
   const [processingRequestId, setProcessingRequestId] = useState<string | null>(null);
   const [allInventory, setAllInventory] = useState<any[]>([]);
+  const [inquiries, setInquiries] = useState<any[]>([]);
   const [systemHealth, setSystemHealth] = useState({
     db: "Checking...",
     cdn: "Checking...",
@@ -303,6 +304,11 @@ const AdminDashboard = () => {
         setRequestLogs(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       });
 
+      const inqQ = query(collection(db, "inquiries"), orderBy("createdAt", "desc"));
+      const unsubInq = onSnapshot(inqQ, (snapshot) => {
+        setInquiries(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      });
+
       // --- HIGH TRAFFIC OPTIMIZATION: Separate stats listener ---
       const allProdQ = query(collection(db, "products"));
       const unsubAll = onSnapshot(allProdQ, (snapshot) => {
@@ -315,6 +321,7 @@ const AdminDashboard = () => {
         unsubUsers();
         unsubNews();
         unsubLogs();
+        unsubInq();
         unsubAll();
       };
     }
@@ -670,6 +677,7 @@ const AdminDashboard = () => {
     { title: "Clientele", icon: Users },
     { title: "Categories", icon: Tag },
     ...(isSuperAdmin ? [{ title: "Admin Requests", icon: Zap }] : []),
+    { title: "Customer Messages", icon: Mail },
     { title: "Settings", icon: Settings },
     { title: "Company Reviews", icon: Star },
   ];
@@ -872,16 +880,16 @@ const AdminDashboard = () => {
             <Menu className="w-5 h-5 text-[#E5D5C5]" />
           </button>
         </div>
-        <nav className="flex-1 py-8 px-4 space-y-2 overflow-y-auto">
+        <nav className="flex-1 py-6 lg:py-8 px-3 lg:px-4 space-y-1 lg:space-y-2 overflow-y-auto">
           {sidebarTabs.map((tab) => (
             <button 
               key={tab.title} 
               onClick={() => setActiveTab(tab.title)} 
-              className={`w-full flex items-center gap-4 px-5 py-4 rounded-2xl transition-all duration-300 ${activeTab === tab.title ? "bg-[#F9F6F2] text-[#310101] shadow-2xl scale-[1.02]" : "hover:bg-white/5 text-white/50"}`}
+              className={`w-full flex items-center gap-3 lg:gap-4 px-4 py-3 lg:px-5 lg:py-4 rounded-xl lg:rounded-2xl transition-all duration-300 ${activeTab === tab.title ? "bg-[#F9F6F2] text-[#310101] shadow-xl lg:shadow-2xl scale-[1.02]" : "hover:bg-white/5 text-white/50"}`}
             >
-              <tab.icon className={`w-6 h-6 shrink-0 transition-colors ${activeTab === tab.title ? "text-[#310101]" : "text-[#E5D5C5]/60"}`} />
+              <tab.icon className={`w-4 h-4 lg:w-6 lg:h-6 shrink-0 transition-colors ${activeTab === tab.title ? "text-[#310101]" : "text-[#E5D5C5]/60"}`} />
               {isSidebarOpen && (
-                <span className="text-[14px] font-black uppercase tracking-[0.1em] text-left leading-none">
+                <span className="text-[10px] sm:text-[11px] lg:text-[14px] font-black uppercase tracking-[0.1em] text-left leading-none">
                   {tab.title === "Boutique News and Announcements" ? "Broadcasts" : tab.title}
                 </span>
               )}
@@ -890,31 +898,31 @@ const AdminDashboard = () => {
         </nav>
         <div className="p-4 mt-12 mb-10">
           {isSidebarOpen && (
-             <div className="px-2 pt-6 border-t border-white/10 mb-6">
-                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#E5D5C5]/40 mb-4">Platform</p>
+             <div className="px-2 pt-4 lg:pt-6 border-t border-white/10 mb-4 lg:mb-6">
+                <p className="text-[9px] lg:text-[10px] font-black uppercase tracking-[0.3em] text-[#E5D5C5]/40 mb-3 lg:mb-4">Platform</p>
                 <button 
                   onClick={() => window.location.href = "/"} 
-                  className="w-full flex items-center gap-4 px-6 py-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-all text-white border border-white/5 shadow-xl group"
+                  className="w-full flex items-center gap-3 lg:gap-4 px-4 py-3 lg:px-6 lg:py-4 rounded-xl lg:rounded-2xl bg-white/5 hover:bg-white/10 transition-all text-white border border-white/5 shadow-xl group"
                 >
-                  <Eye className="w-5 h-5 text-[#E5D5C5] shrink-0 group-hover:scale-110 transition-transform" />
-                  <span className="text-[14px] font-black uppercase tracking-[0.2em]">Main Portal</span>
+                  <Eye className="w-4 h-4 lg:w-5 lg:h-5 text-[#E5D5C5] shrink-0 group-hover:scale-110 transition-transform" />
+                  <span className="text-[10px] sm:text-[11px] lg:text-[14px] font-black uppercase tracking-[0.2em]">Main Portal</span>
                 </button>
              </div>
           )}
 
           <div className="px-2">
              {isSidebarOpen ? (
-               <div className="bg-white/5 rounded-[25px] p-5 border border-white/5 flex items-center gap-4 shadow-xl">
-                  <div className="w-12 h-12 rounded-full bg-[#B0843D] flex items-center justify-center font-serif italic text-xl font-bold text-white shadow-lg">
+               <div className="bg-white/5 rounded-xl lg:rounded-[25px] p-3 lg:p-5 border border-white/5 flex items-center gap-3 lg:gap-4 shadow-xl">
+                  <div className="w-8 h-8 lg:w-12 lg:h-12 rounded-full bg-[#B0843D] flex items-center justify-center font-serif italic text-sm lg:text-xl font-bold text-white shadow-lg shrink-0">
                     {user?.displayName?.charAt(0) || user?.email?.charAt(0) || "K"}
                   </div>
                   <div className="flex-1 overflow-hidden">
-                     <p className="text-[18px] font-black uppercase tracking-tight text-white leading-tight">
+                     <p className="text-[12px] lg:text-[18px] font-black uppercase tracking-tight text-white leading-tight truncate">
                         {user?.displayName || "Authorized User"}
                      </p>
-                     <div className="flex items-center gap-1.5">
-                        <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-                        <span className="text-[10px] font-black uppercase tracking-[0.1em] text-green-400">Authorized</span>
+                     <div className="flex items-center gap-1.5 mt-0.5">
+                        <div className="w-1.5 h-1.5 lg:w-2 lg:h-2 rounded-full bg-green-400 animate-pulse" />
+                        <span className="text-[8px] lg:text-[10px] font-black uppercase tracking-[0.1em] text-green-400">Authorized</span>
                      </div>
                   </div>
                </div>
@@ -924,13 +932,13 @@ const AdminDashboard = () => {
           </div>
         </div>
 
-        <div className="p-4 mt-auto border-t border-white/10 pt-6">
+        <div className="p-4 mt-auto border-t border-white/10 pt-4 lg:pt-6">
           {isSidebarOpen ? (
             <button
                onClick={async () => { await logout(); window.location.href = "/"; }}
-               className="w-full flex items-center justify-center gap-4 px-8 py-5 rounded-2xl bg-white text-[#310101] hover:bg-red-500 hover:text-white transition-all duration-300 shadow-2xl font-black uppercase tracking-[0.1em] text-[12px]"
+               className="w-full flex items-center justify-center gap-3 lg:gap-4 px-4 py-3 lg:px-8 lg:py-5 rounded-xl lg:rounded-2xl bg-white text-[#310101] hover:bg-red-500 hover:text-white transition-all duration-300 shadow-2xl font-black uppercase tracking-[0.1em] text-[10px] lg:text-[12px]"
             >
-               <LogOut className="w-4 h-4" />
+               <LogOut className="w-3.5 h-3.5 lg:w-4 lg:h-4" />
                Sign Out Account
             </button>
           ) : (
@@ -1755,6 +1763,50 @@ const AdminDashboard = () => {
           )}
 
 
+
+          {activeTab === "Customer Messages" && (
+            <div className="space-y-6 pb-4 px-2 md:px-0 max-w-5xl mx-auto">
+               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 md:p-8 rounded-[30px] md:rounded-[40px] border shadow-sm">
+                  <h2 className="text-xl md:text-3xl font-serif font-black italic">Customer Inquiries</h2>
+                  <div className="bg-[#F9F6F2] px-6 md:px-10 py-3 md:py-4 rounded-full text-[11px] md:text-[14px] font-black uppercase tracking-widest text-[#310101] whitespace-nowrap">{inquiries.length} Messages</div>
+               </div>
+               
+               <div className="grid grid-cols-1 gap-4 md:gap-6">
+                 {inquiries.length === 0 ? (
+                   <div className="bg-white p-12 rounded-[40px] border border-gray-100 text-center opacity-50 flex flex-col items-center shadow-sm">
+                     <Mail className="w-12 h-12 mx-auto mb-4 text-[#B0843D]" />
+                     <p className="font-black uppercase tracking-widest text-sm text-[#310101]">No inquiries found.</p>
+                   </div>
+                 ) : (
+                   inquiries.map((inq) => (
+                     <div key={inq.id} className="bg-white p-6 md:p-8 rounded-[30px] md:rounded-[40px] border border-gray-100 shadow-sm flex flex-col md:flex-row gap-6 relative group hover:shadow-xl transition-all">
+                        <div className="w-12 h-12 md:w-16 md:h-16 bg-[#F9F6F2] rounded-[15px] md:rounded-[20px] flex items-center justify-center font-serif text-xl md:text-3xl font-bold shrink-0 text-[#310101]">
+                          {inq.name.charAt(0)}
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex flex-col md:flex-row justify-between md:items-center mb-2 gap-1 md:gap-4">
+                            <h3 className="text-xl md:text-2xl font-serif font-black italic text-[#310101]">{inq.name}</h3>
+                            <span className="text-[10px] md:text-[12px] uppercase font-black tracking-widest text-black/30 bg-gray-50 px-3 py-1 rounded-md self-start md:self-auto">
+                               {inq.createdAt?.toDate ? new Date(inq.createdAt.toDate()).toLocaleDateString() : 'Just now'}
+                            </span>
+                          </div>
+                          <p className="text-[12px] md:text-[14px] font-black tracking-wider text-[#B0843D] mb-4 uppercase">{inq.email}</p>
+                          <p className="text-[14px] md:text-[16px] border-l-4 border-[#E5D5C5] pl-5 italic text-black/70 leading-relaxed font-serif">"{inq.message}"</p>
+                        </div>
+                        <div className="md:absolute right-6 top-6 md:opacity-0 group-hover:opacity-100 transition-opacity flex gap-2 justify-end mt-4 md:mt-0">
+                           <a href={`mailto:${inq.email}?subject=Reply to your Kaleemiya Inquiry`} title="Reply via Email" className="bg-[#B0843D] text-white p-3 md:p-4 rounded-xl md:rounded-2xl hover:scale-110 transition-transform shadow-lg">
+                             <Send className="w-4 h-4 md:w-5 md:h-5" />
+                           </a>
+                           <button onClick={() => deleteDoc(doc(db, "inquiries", inq.id))} title="Delete Inquiry" className="bg-red-50 text-red-500 p-3 md:p-4 rounded-xl md:rounded-2xl hover:scale-110 transition-transform shadow-sm border border-red-100">
+                             <Trash2 className="w-4 h-4 md:w-5 md:h-5" />
+                           </button>
+                        </div>
+                     </div>
+                   ))
+                 )}
+               </div>
+            </div>
+          )}
 
           {activeTab === "New Desk" && (
             <div className="max-w-4xl mx-auto pb-32 px-2">
