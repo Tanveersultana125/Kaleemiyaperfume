@@ -845,7 +845,7 @@ const AdminDashboard = () => {
 
 
   return (
-    <div className="min-h-screen bg-[#FDFCFB] flex font-sans overflow-x-hidden">
+    <div className="min-h-screen bg-[#FDFCFB] flex font-sans overflow-x-hidden w-full relative">
       {/* Mobile Sidebar Overlay */}
       {isSidebarOpen && (
         <div 
@@ -940,7 +940,7 @@ const AdminDashboard = () => {
       </aside>
 
       {/* Main */}
-      <main className="flex-1 flex flex-col h-screen overflow-hidden relative">
+      <main className="flex-1 flex flex-col h-screen overflow-hidden relative w-full min-w-0">
         <header className="bg-white/80 backdrop-blur-md border-b h-16 flex items-center justify-between px-4 md:px-8 shrink-0 shadow-sm z-30">
           <div className="flex items-center gap-3">
             <button 
@@ -1559,66 +1559,66 @@ const AdminDashboard = () => {
           )}
 
           {activeTab === "Categories" && (
-            <div className="space-y-6 pb-4">
-               <div className="flex justify-between items-center bg-white p-8 rounded-[40px] border">
-                  <h2 className="text-3xl font-serif font-black italic">Collection Directory</h2>
-                  <button onClick={handleAddCategory} className="bg-black text-white px-10 py-4 rounded-full text-[14px] font-black uppercase tracking-widest">Add Category</button>
+            <div className="space-y-6 pb-4 px-2 md:px-0">
+               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 md:p-8 rounded-[30px] md:rounded-[40px] border shadow-sm">
+                  <h2 className="text-xl md:text-3xl font-serif font-black italic">Collection Directory</h2>
+                  <button onClick={handleAddCategory} className="bg-black text-white w-full sm:w-auto px-6 md:px-10 py-3 md:py-4 rounded-full text-[11px] md:text-[14px] font-black uppercase tracking-widest">Add Category</button>
                </div>
-               <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
+               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-8">
                    {allCategories.map((cat, i) => (
-                     <div key={i} className="bg-white p-10 rounded-[40px] border shadow-sm flex flex-col group hover:shadow-xl transition-all">
-                        <div className="flex justify-between items-start mb-6">
-                           <div className="p-4 bg-[#F9F6F2] rounded-2xl">
-                              <Tag className="w-8 h-8 text-[#310101]/90" />
+                     <div key={i} className="bg-white p-5 md:p-10 rounded-[30px] md:rounded-[40px] border shadow-sm flex flex-col group hover:shadow-xl transition-all">
+                        <div className="flex justify-between items-start mb-4 md:mb-6">
+                           <div className="p-3 md:p-4 bg-[#F9F6F2] rounded-xl md:rounded-2xl shrink-0">
+                              <Tag className="w-5 h-5 md:w-8 md:h-8 text-[#310101]/90" />
                            </div>
-                           <div className="flex gap-2">
+                           <div className="flex gap-1.5 md:gap-2">
                              {!["Our Bestseller", "New Arrival"].includes(cat) && (
                                <>
                                  <button 
                                    onClick={() => handleDeleteCategory(cat)}
-                                   className="p-3 bg-red-50 text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition-all"
+                                   className="p-2 md:p-3 bg-red-50 text-red-500 rounded-[10px] md:rounded-xl hover:bg-red-500 hover:text-white transition-all shrink-0"
                                    title="Delete Category"
                                  >
-                                    <Trash2 className="w-5 h-5" />
+                                    <Trash2 className="w-4 h-4 md:w-5 md:h-5" />
                                  </button>
                                  <button 
                                    onClick={() => handleEditCategory(cat)}
-                                   className="p-3 bg-blue-50 text-blue-500 rounded-xl hover:bg-blue-500 hover:text-white transition-all"
+                                   className="p-2 md:p-3 bg-blue-50 text-blue-500 rounded-[10px] md:rounded-xl hover:bg-blue-500 hover:text-white transition-all shrink-0"
                                    title="Rename Category"
                                  >
-                                    <Edit2 className="w-5 h-5" />
+                                    <Edit2 className="w-4 h-4 md:w-5 md:h-5" />
                                  </button>
                                </>
                              )}
                              <button 
                                onClick={() => handleAddSubCategory(cat)}
-                               className="p-3 bg-black text-white rounded-xl hover:opacity-80 transition-opacity"
+                               className="p-2 md:p-3 bg-black text-white rounded-[10px] md:rounded-xl hover:opacity-80 transition-opacity shrink-0"
                                title="Add Sub-category"
                              >
-                                <PlusCircle className="w-5 h-5" />
+                                <PlusCircle className="w-4 h-4 md:w-5 md:h-5" />
                              </button>
                            </div>
                         </div>
-                        <h3 className="font-serif font-black text-2xl italic text-[#310101] mb-4">{cat}</h3>
-                        <div className="flex flex-wrap gap-2">
+                        <h3 className="font-serif font-black text-lg md:text-2xl italic text-[#310101] mb-3 md:mb-4">{cat}</h3>
+                        <div className="flex flex-wrap gap-1.5 md:gap-2">
                            {(dynamicSubCategories[cat] || []).map((sub, si) => (
-                              <span key={si} className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 hover:bg-white rounded-lg text-[14px] font-black uppercase tracking-widest text-black/40 border border-gray-100 relative shadow-sm transition-colors group/sub">
-                                 {sub}
+                              <span key={si} className="flex items-center gap-1 md:gap-1.5 px-2 md:px-3 py-1 md:py-1.5 bg-gray-50 hover:bg-white rounded-[8px] md:rounded-lg text-[9px] md:text-[14px] font-black uppercase tracking-widest text-black/40 border border-gray-100 relative shadow-sm transition-colors group/sub max-w-full">
+                                 <span className="truncate">{sub}</span>
                                  {!["General"].includes(sub) && (
-                                   <div className="flex items-center gap-1">
+                                   <div className="flex items-center gap-0.5 md:gap-1 shrink-0 ml-1">
                                      <button 
                                        onClick={(e) => { e.stopPropagation(); handleEditSubCategory(cat, sub); }} 
-                                       className="hover:text-blue-500 hover:bg-blue-50 rounded-full transition-all text-black/20 aspect-square flex items-center justify-center p-0.5"
+                                       className="hover:text-blue-500 hover:bg-blue-50 rounded-full transition-all text-black/20 flex items-center justify-center p-0.5 md:p-1 shrink-0"
                                        title="Rename Sub-category"
                                      >
-                                        <Edit2 className="w-3 h-3" />
+                                        <Edit2 className="w-3 h-3 md:w-3.5 md:h-3.5" />
                                      </button>
                                      <button 
                                        onClick={(e) => { e.stopPropagation(); handleDeleteSubCategory(cat, sub); }} 
-                                       className="hover:text-red-500 hover:bg-red-50 rounded-full transition-all text-black/20 aspect-square flex items-center justify-center p-0.5"
+                                       className="hover:text-red-500 hover:bg-red-50 rounded-full transition-all text-black/20 flex items-center justify-center p-0.5 md:p-1 shrink-0"
                                        title="Delete Sub-category"
                                      >
-                                        <X className="w-3.5 h-3.5" />
+                                        <X className="w-3 h-3 md:w-3.5 md:h-3.5" />
                                      </button>
                                    </div>
                                  )}
@@ -1666,7 +1666,7 @@ const AdminDashboard = () => {
               </div>
                 <div className="bg-white rounded-[55px] shadow-sm border border-gray-100 overflow-hidden divide-y">
                 {filteredRequests.map((item) => (
-                  <div key={item.id} className={`p-12 flex flex-col lg:flex-row items-center justify-between gap-12 hover:bg-gray-50/50 transition-all duration-300 ${processingRequestId === item.id ? "opacity-40 pointer-events-none" : ""}`}>
+                  <div key={item.id} className={`p-6 md:p-12 flex flex-col lg:flex-row items-center justify-between gap-6 md:gap-12 hover:bg-gray-50/50 transition-all duration-300 ${processingRequestId === item.id ? "opacity-40 pointer-events-none" : ""}`}>
                     <div className="flex items-center gap-10">
                       <div className="w-28 h-28 rounded-[40px] bg-black text-[#E5D5C5] flex items-center justify-center font-serif text-5xl font-bold">
                         {processingRequestId === item.id ? <Loader2 className="w-10 h-10 animate-spin" /> : (item.name?.charAt(0) || "?")}

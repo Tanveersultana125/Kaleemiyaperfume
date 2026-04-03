@@ -17,7 +17,7 @@ import AdminRequest from "./pages/AdminRequest.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import AIChatbot from "./components/AIChatbot.tsx";
 import WhatsAppButton from "./components/WhatsAppButton.tsx";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AnimatePresence } from "framer-motion";
 import SplashScreen from "./components/SplashScreen.tsx";
 import { CartProvider } from "./context/CartContext.tsx";
@@ -68,6 +68,21 @@ const SupportWidgets = () => {
 
 const App = () => {
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    try {
+      const entries = performance.getEntriesByType("navigation") as PerformanceNavigationTiming[];
+      if (entries.length > 0 && entries[0].type === "reload") {
+        const path = window.location.pathname;
+        // Strictly enforcing refresh redirect to Home except for administrative domains
+        if (path !== "/" && !path.startsWith("/admin")) {
+          window.location.replace("/");
+        }
+      }
+    } catch (error) {
+      // Fallback ignore if navigation API is unsupported
+    }
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>

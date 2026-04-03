@@ -66,28 +66,28 @@ const ProductCard = ({ id, image, name, price, isNew, category, subCategory, dis
         </div>
 
         {/* Product Title */}
-        <h3 className="font-sans text-[14px] sm:text-[15px] md:text-[18px] text-[#C29D59] mb-1.5 md:mb-2 leading-snug line-clamp-2">
+        <h3 className="font-sans text-[12px] sm:text-[13px] md:text-[18px] text-[#C29D59] mb-1 md:mb-2 leading-snug line-clamp-2">
           {name}
         </h3>
 
         {/* Price Row */}
-        <div className="flex flex-wrap items-center gap-1.5 md:gap-2 mb-3 md:mb-4 mt-auto">
+        <div className="flex flex-wrap items-center gap-1.5 md:gap-2 mb-2 md:mb-4 mt-auto">
           {activeDiscountPrice ? (
             <>
-               <span className="text-[17px] sm:text-[19px] md:text-[24px] font-bold text-[#111] leading-none">
+               <span className="text-[14px] sm:text-[16px] md:text-[24px] font-bold text-[#111] leading-none">
                  {"\u20B9"}{parseInt(activeDiscountPrice.replace(/[^\d]/g, "")).toLocaleString()}
                </span>
-               <span className="text-[#747e8e] line-through text-[12px] md:text-[15px] font-medium">
+               <span className="text-[#747e8e] line-through text-[11px] md:text-[15px] font-medium">
                  {"\u20B9"}{parseInt(price.replace(/[^\d]/g, "")).toLocaleString()}
                </span>
                {activeDiscountPercent > 0 && (
-                 <span className="bg-[#489b6f] text-white text-[10px] md:text-[13px] font-bold px-1.5 py-[2px] rounded tracking-wide">
+                 <span className="bg-[#489b6f] text-white text-[9px] md:text-[13px] font-bold px-1.5 py-[2px] rounded tracking-wide">
                    {activeDiscountPercent}% off
                  </span>
                )}
             </>
           ) : (
-             <span className="text-[17px] sm:text-[19px] md:text-[24px] font-bold text-[#111] leading-none">
+             <span className="text-[14px] sm:text-[16px] md:text-[24px] font-bold text-[#111] leading-none">
                {"\u20B9"}{parseInt(price.replace(/[^\d]/g, "")).toLocaleString()}
              </span>
           )}
@@ -96,10 +96,10 @@ const ProductCard = ({ id, image, name, price, isNew, category, subCategory, dis
         {/* ADD TO CART Button */}
         <button 
           onClick={handleAddToCart}
-          className="w-full py-2 md:py-[10px] bg-[#DEB87A] hover:bg-[#D0A96B] text-black font-sans font-bold uppercase tracking-wider text-[11px] sm:text-[12px] md:text-[15px] rounded-full transition-all flex items-center justify-center gap-1.5 md:gap-2"
+          className="w-full py-1.5 md:py-[10px] bg-[#DEB87A] hover:bg-[#D0A96B] text-black font-sans font-bold uppercase tracking-wider text-[10px] sm:text-[11px] md:text-[15px] rounded-full transition-all flex items-center justify-center gap-1 md:gap-2"
         >
           <span className="whitespace-nowrap">ADD TO CART</span>
-          <ShoppingCart className="w-3.5 h-3.5 md:w-4 md:h-4 text-black fill-black shrink-0" />
+          <ShoppingCart className="w-3 h-3 md:w-4 md:h-4 text-black fill-black shrink-0" />
         </button>
       </div>
     </motion.div>
