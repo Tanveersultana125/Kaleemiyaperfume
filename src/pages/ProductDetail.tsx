@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ChevronRight, Star, ShieldCheck, Truck, RotateCcw, ShoppingCart, Trash2 } from "lucide-react";
+import { ChevronRight, Star, ShieldCheck, Truck, RotateCcw, ShoppingCart, Trash2, ArrowLeft } from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import ProductImageSlider from "@/components/ProductImageSlider";
@@ -142,9 +142,21 @@ const ProductDetail = () => {
       
       <div className="h-24 md:h-32"></div>
 
-      <main className="flex-grow w-full max-w-[1440px] mx-auto px-6 md:px-12 lg:px-20 mb-20">
+      <main className="flex-grow w-full max-w-[1440px] mx-auto px-6 md:px-12 lg:px-20 mb-20 relative">
+        <div className="absolute left-6 md:left-10 z-30 top-4">
+          <motion.button
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            onClick={() => navigate(-1)}
+            className="p-3 sm:p-3.5 rounded-full bg-white shadow-2xl border border-[#310101]/5 text-[#310101] hover:bg-black/5 active:scale-90 transition-all shrink-0"
+            aria-label="Go Back"
+          >
+            <ArrowLeft className="w-5 h-5 sm:w-6 sm:h-6" />
+          </motion.button>
+        </div>
+
         {/* Breadcrumbs */}
-        <nav className="flex items-center gap-2 text-sm text-muted-foreground uppercase tracking-widest mb-8 overflow-x-auto whitespace-nowrap pb-2">
+        <nav className="flex items-center gap-2 text-sm text-muted-foreground uppercase tracking-widest mb-8 overflow-x-auto whitespace-nowrap pb-2 pl-12 sm:pl-14">
           <span className="hover:text-primary cursor-pointer transition-colors" onClick={() => navigate("/")}>Home</span>
           <ChevronRight className="w-3 h-3" />
           <span className="hover:text-primary cursor-pointer transition-colors" onClick={() => navigate("/shop")}>Shop</span>

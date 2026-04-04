@@ -22,7 +22,7 @@ export default defineConfig(({ mode }) => ({
         name: "Kaleemiya Perfumes",
         short_name: "Kaleemiya",
         description: "Luxury Boutique Perfumes & Fragrances",
-        theme_color: "#310101",
+        theme_color: "#FDFCFB",
         background_color: "#FDFCFB",
         display: "standalone",
         start_url: "/",

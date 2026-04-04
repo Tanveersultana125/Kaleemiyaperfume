@@ -270,23 +270,6 @@ const Shop = ({
       <main className="flex-grow w-full max-w-[1440px] mx-auto px-6 md:px-12 lg:px-20 mb-32">
         {/* Page Header */}
         <div className="relative py-10 md:py-16">
-          <div className="absolute left-0 top-1/2 -translate-y-1/2 z-30">
-            <AnimatePresence>
-              {(activeCategory !== "all" || discountParam) && (
-                <motion.button
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  onClick={() => navigate(-1)}
-                  className="p-2 sm:p-2.5 rounded-full bg-white shadow-lg border border-[#310101]/5 text-[#310101] hover:bg-black/5 active:scale-90 transition-all shrink-0"
-                  aria-label="Go Back"
-                >
-                  <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
-                </motion.button>
-              )}
-            </AnimatePresence>
-          </div>
-          
           <div className="flex flex-col items-center text-center space-y-4">
             <motion.h1 
               key={displayTitle}
