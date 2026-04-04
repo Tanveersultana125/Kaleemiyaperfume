@@ -44,6 +44,27 @@ const AdminDashboard = () => {
     api: "Checking..."
   });
   const [galleryItems, setGalleryItems] = useState<any[]>([]);
+  const [heroSlides, setHeroSlides] = useState<any[]>([]);
+  const [newHeroSlide, setNewHeroSlide] = useState({
+    titleFirstLine: "",
+    titleHighlight: "",
+    titleLastLine: "",
+    subtitle: "",
+    buttonText: "",
+    link: "/shop",
+    image: "",
+    order: 0
+  });
+  const [editingHeroSlide, setEditingHeroSlide] = useState<any>(null);
+  const [heroImagePreview, setHeroImagePreview] = useState<string | null>(null);
+  const [isHeroUploading, setIsHeroUploading] = useState(false);
+
+  useEffect(() => {
+    const unsub = onSnapshot(query(collection(db, "hero_slides"), orderBy("order", "asc")), (snap) => {
+      setHeroSlides(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    });
+    return () => unsub();
+  }, []);
 
   useEffect(() => {
     const checkSystems = async () => {
@@ -592,6 +613,60 @@ const AdminDashboard = () => {
     return nameMatch || emailMatch;
   });
 
+  const handleHeroImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setHeroImagePreview(URL.createObjectURL(file));
+    setIsHeroUploading(true);
+    try {
+      const { uploadToCloudinary } = await import("@/utils/cloudinary");
+      const cloudUrl = await uploadToCloudinary(file);
+      setNewHeroSlide((prev: any) => ({ ...prev, image: cloudUrl }));
+      toast.success("Flagship media synchronized!");
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setIsHeroUploading(false);
+    }
+  };
+
+  const handleAddHeroSlide = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newHeroSlide.image) {
+      toast.error("Waiting for flagship media upload...");
+      return;
+    }
+    try {
+      const slideData = { ...newHeroSlide, createdAt: new Date().toISOString() };
+      await addDoc(collection(db, "hero_slides"), slideData);
+      setNewHeroSlide({
+        titleFirstLine: "",
+        titleHighlight: "",
+        titleLastLine: "",
+        subtitle: "",
+        buttonText: "",
+        link: "/shop",
+        image: "",
+        order: heroSlides.length
+      });
+      setHeroImagePreview(null);
+      toast.success("New Hero Slide Integrated!");
+    } catch (err: any) {
+      toast.error(err.message);
+    }
+  };
+
+  const handleDeleteHeroSlide = async (id: string) => {
+    if (confirm("ARCHIVE FLAGSHIP SLIDE? This action is permanent.")) {
+      try {
+        await deleteDoc(doc(db, "hero_slides", id));
+        toast.success("Hero Slide Archived.");
+      } catch (err: any) {
+        toast.error(err.message);
+      }
+    }
+  };
+
   const handleApproveReq = async (requestId: string, uid: string, name: string) => {
     if (!isSuperAdmin || processingRequestId) return;
     setProcessingRequestId(requestId);
@@ -694,6 +769,7 @@ const AdminDashboard = () => {
     { title: "Orders", icon: ShoppingBag },
     { title: "Clientele", icon: Users },
     { title: "Categories", icon: Tag },
+    { title: "Hero Slider", icon: Calendar },
     ...(isSuperAdmin ? [{ title: "Admin Requests", icon: Zap }] : []),
     { title: "Customer Messages", icon: Mail },
     { title: "Settings", icon: Settings },
@@ -1972,7 +2048,7 @@ const AdminDashboard = () => {
                       </button>
                    </div>
 
-                   <div className="space-y-4">
+                  <div className="space-y-4">
                       <label className="text-[15px] font-black uppercase text-[#B0843D]">Our Bestseller</label>
                       <button 
                         type="button"
@@ -2012,6 +2088,105 @@ const AdminDashboard = () => {
                    {isUploading ? "Uploading to Cloud..." : "Publish to Boutique Production"}
                 </button>
               </form>
+            </div>
+          )}
+
+          {activeTab === "Hero Slider" && (
+            <div className="max-w-6xl mx-auto space-y-12 pb-24 px-4">
+               <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
+                  <div>
+                    <h2 className="text-4xl md:text-7xl font-serif font-black italic tracking-tighter text-[#310101]">Hero Management</h2>
+                    <p className="text-[#B0843D] font-black uppercase tracking-[0.3em] text-[13px] mt-4">Curate your sanctuary's flagship entry message</p>
+                  </div>
+                  <div className="p-4 bg-white border rounded-2xl flex items-center gap-4 shadow-sm">
+                    <ShieldAlert className="w-6 h-6 text-[#310101]/20" />
+                    <p className="text-[11px] font-black uppercase text-black/40">Authorized Access Only</p>
+                  </div>
+               </div>
+
+               <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+                  {/* Form */}
+                  <div className="lg:col-span-1 bg-white p-10 rounded-[50px] shadow-sm border border-[#E5D5C5]/30">
+                    <h3 className="text-2xl font-serif font-black italic mb-8">Add New Slide</h3>
+                    <form onSubmit={handleAddHeroSlide} className="space-y-6">
+                      <div className="space-y-4">
+                        <label className="text-[12px] font-black uppercase text-[#B0843D]">Title Line 1</label>
+                        <input required value={newHeroSlide.titleFirstLine} onChange={e => setNewHeroSlide({...newHeroSlide, titleFirstLine: e.target.value})} className="w-full p-5 bg-gray-50 rounded-2xl font-bold italic outline-none focus:ring-4 focus:ring-[#B0843D]/5" />
+                      </div>
+                      <div className="space-y-4">
+                        <label className="text-[12px] font-black uppercase text-[#B0843D]">Gold Highlight Text</label>
+                        <input required value={newHeroSlide.titleHighlight} onChange={e => setNewHeroSlide({...newHeroSlide, titleHighlight: e.target.value})} className="w-full p-5 bg-gray-50 rounded-2xl font-bold italic outline-none focus:ring-4 focus:ring-[#B0843D]/5" />
+                      </div>
+                      <div className="space-y-4">
+                        <label className="text-[12px] font-black uppercase text-[#B0843D]">Title Line 2</label>
+                        <input required value={newHeroSlide.titleLastLine} onChange={e => setNewHeroSlide({...newHeroSlide, titleLastLine: e.target.value})} className="w-full p-5 bg-gray-50 rounded-2xl font-bold italic outline-none focus:ring-4 focus:ring-[#B0843D]/5" />
+                      </div>
+                      <div className="space-y-4">
+                        <label className="text-[12px] font-black uppercase text-[#B0843D]">Aromatic Subtitle</label>
+                        <textarea required value={newHeroSlide.subtitle} onChange={e => setNewHeroSlide({...newHeroSlide, subtitle: e.target.value})} className="w-full h-32 p-5 bg-gray-50 rounded-2xl font-medium italic outline-none resize-none" />
+                      </div>
+                      <div className="space-y-4">
+                        <label className="text-[12px] font-black uppercase text-[#B0843D]">Button Text</label>
+                        <input required value={newHeroSlide.buttonText} onChange={e => setNewHeroSlide({...newHeroSlide, buttonText: e.target.value})} className="w-full p-5 bg-gray-50 rounded-2xl font-bold outline-none" />
+                      </div>
+                      <div className="space-y-4">
+                        <label className="text-[12px] font-black uppercase text-[#B0843D]">Flagship Media Asset</label>
+                        <div className="relative aspect-video bg-gray-50 rounded-[30px] border-2 border-dashed border-[#B0843D]/20 flex flex-col items-center justify-center overflow-hidden group">
+                           {heroImagePreview ? (
+                              <img src={heroImagePreview} className="w-full h-full object-cover" />
+                           ) : (
+                              <div className="text-center opacity-30 group-hover:opacity-100 transition-opacity">
+                                 <PlusCircle className="w-10 h-10 mx-auto mb-2 text-[#B0843D]" />
+                                 <p className="text-[10px] uppercase font-black tracking-widest text-[#B0843D]">Elite Upload</p>
+                              </div>
+                           )}
+                           <input type="file" onChange={handleHeroImageChange} className="absolute inset-0 opacity-0 cursor-pointer" />
+                        </div>
+                        {isHeroUploading && <p className="text-[10px] font-black uppercase text-[#B0843D] animate-pulse">Syncing with High-Fidelity Cloud...</p>}
+                      </div>
+
+                      <button type="submit" disabled={isHeroUploading} className="w-full bg-[#B0843D] text-white py-6 rounded-3xl font-black uppercase tracking-widest shadow-xl hover:scale-105 active:scale-95 transition-all mt-4 disabled:opacity-50">
+                        {isHeroUploading ? "Syncing Media..." : "Integrate Slide"}
+                      </button>
+                    </form>
+                  </div>
+
+                  {/* List */}
+                  <div className="lg:col-span-2 space-y-8">
+                    <h3 className="text-2xl font-serif font-black italic">Active Flagship Slides</h3>
+                    {heroSlides.length === 0 ? (
+                      <div className="bg-white p-20 rounded-[50px] border border-dashed flex flex-col items-center justify-center opacity-30 italic font-serif">
+                         <Image className="w-16 h-16 mb-4" />
+                         <p className="text-2xl">No Active Hero Portals</p>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        {heroSlides.map((slide) => (
+                           <div key={slide.id} className="bg-white p-8 rounded-[40px] shadow-sm border group hover:shadow-2xl transition-all relative overflow-hidden flex flex-col">
+                              <div className="absolute top-0 right-0 p-8 flex gap-2 z-10 translate-y-2 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all">
+                                 <button onClick={() => handleDeleteHeroSlide(slide.id)} className="w-12 h-12 rounded-full bg-red-500 text-white flex items-center justify-center shadow-lg hover:scale-110 active:scale-90 transition-all"><Trash2 className="w-5 h-5" /></button>
+                              </div>
+                              <div className="aspect-[4/5] rounded-[30px] overflow-hidden mb-6 bg-gray-50 border relative">
+                                 <img src={slide.image} className="w-full h-full object-cover object-top" />
+                                 <div className="absolute inset-x-0 bottom-0 p-6 bg-gradient-to-t from-black/80 to-transparent">
+                                    <h5 className="text-[#E5D5C5] font-serif font-black italic text-xl leading-tight">
+                                      {slide.titleFirstLine} {slide.titleHighlight} {slide.titleLastLine}
+                                    </h5>
+                                 </div>
+                              </div>
+                              <div className="space-y-4 px-2">
+                                 <p className="text-[13px] font-medium text-black/50 italic line-clamp-2">"{slide.subtitle}"</p>
+                                 <div className="flex items-center gap-4 pt-4 border-t border-gray-100">
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-[#B0843D] px-3 py-1.5 bg-[#B0843D]/5 rounded-full">{slide.buttonText}</span>
+                                    <span className="text-[10px] font-black uppercase tracking-widest opacity-20">{slide.link}</span>
+                                 </div>
+                              </div>
+                           </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+               </div>
             </div>
           )}
 
