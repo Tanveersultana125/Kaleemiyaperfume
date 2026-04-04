@@ -382,14 +382,12 @@ const Checkout = () => {
 
         {/* Dynamic Action Bar - High Impact Seamless */}
         <div className="p-8 bg-white space-y-6 rounded-t-[40px] shadow-[0_-30px_60px_rgba(0,0,0,0.03)] shrink-0">
-           {checkoutStep !== 'success' && (
-             <div className="flex items-center gap-4 p-5 bg-[#FDFBF7] rounded-[24px] border border-[#E5D5C5]/40 cursor-not-allowed">
-                <div className="w-8 h-8 bg-black rounded-full flex items-center justify-center shadow-lg">
-                   <Check className="w-5 h-5 text-white" />
-                </div>
-                <span className="text-[14px] font-black uppercase tracking-widest text-[#310101]">Artisan Sync Active</span>
-             </div>
-           )}
+           <div className="flex items-center gap-4 p-5 bg-[#FDFBF7] rounded-[24px] border border-[#E5D5C5]/40 cursor-not-allowed">
+              <div className="w-8 h-8 bg-black rounded-full flex items-center justify-center shadow-lg">
+                 <Check className="w-5 h-5 text-white" />
+              </div>
+              <span className="text-[14px] font-black uppercase tracking-widest text-[#310101]">Artisan Sync Active</span>
+           </div>
            
            <button 
              onClick={handleContinue}

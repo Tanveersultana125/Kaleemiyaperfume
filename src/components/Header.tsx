@@ -152,12 +152,18 @@ const Header = () => {
                  onKeyDown={(e) => {
                    if (e.key === 'Enter' && searchQuery.trim()) {
                      navigate(`/shop?search=${encodeURIComponent(searchQuery)}`);
+                     setSearchOpen(false);
                    }
                  }}
-                 placeholder="Search..."
-                 className="w-full bg-black/5 border border-transparent rounded-full py-2 px-5 pr-10 text-[15px] text-black placeholder:text-black/40 focus:outline-none focus:bg-white focus:border-black/10 transition-all font-sans"
+                 placeholder="Search collections..."
+                 className="w-full bg-black/5 border border-transparent rounded-full py-2.5 px-6 pr-12 text-[14px] text-black placeholder:text-black/30 focus:outline-none focus:bg-white focus:border-black/10 transition-all font-sans"
                />
-               <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-black/40" />
+               <button 
+                 onClick={() => searchQuery.trim() && navigate(`/shop?search=${encodeURIComponent(searchQuery)}`)}
+                 className="absolute right-4 top-1/2 -translate-y-1/2 p-1 hover:scale-110 active:scale-95 transition-all"
+               >
+                 <Search className="w-4 h-4 text-black/40" />
+               </button>
             </div>
 
             <button 
@@ -165,16 +171,22 @@ const Header = () => {
               className="text-black hover:text-black/70 transition-colors hidden md:flex items-center gap-2 group"
             >
               <User className="w-5 h-5 text-black/80" />
-              <span className="text-[13px] lg:text-[14px] uppercase tracking-[0.2em] text-black group-hover:text-black/70 font-bold whitespace-nowrap">
-                {user ? user.displayName : "Account"}
+              <span className="text-[13px] lg:text-[14px] uppercase tracking-[0.25em] text-black group-hover:text-black/70 font-black whitespace-nowrap">
+                {user ? (user.displayName || user.email?.split('@')[0]) : "Account"}
               </span>
             </button>
-            <Search className="lg:hidden w-6 h-6 text-black cursor-pointer active:scale-95 transition-transform" onClick={() => setSearchOpen(!searchOpen)} />
+            
+            <button 
+              onClick={() => setSearchOpen(!searchOpen)} 
+              className="lg:hidden p-1 text-black active:scale-90 transition-transform"
+            >
+              <Search className="w-6 h-6" />
+            </button>
+            
             <div className="scale-110 sm:scale-125 origin-right">
               <CartDrawer />
             </div>
             
-            {/* Mobile Menu Toggle */}
             <button 
               className="xl:hidden text-black p-1 active:scale-90 transition-transform"
               onClick={() => setMobileOpen(!mobileOpen)}
@@ -183,6 +195,54 @@ const Header = () => {
             </button>
           </div>
         </div>
+
+        {/* Mobile Search Overlay Slide-down */}
+        <AnimatePresence>
+          {searchOpen && (
+            <>
+              {/* Backdrop for outside-click closing */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setSearchOpen(false)}
+                className="lg:hidden fixed inset-0 bg-black/20 backdrop-blur-[2px] z-30"
+              />
+              
+              <motion.div
+                initial={{ y: -50, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                exit={{ y: -50, opacity: 0 }}
+                className="lg:hidden fixed left-0 right-0 top-[80px] sm:top-[96px] md:top-[112px] bg-[#F9F6F2] border-b border-black/5 shadow-2xl overflow-hidden z-40"
+              >
+                <div className="p-4 sm:p-5 flex items-center gap-4">
+                  <div className="relative flex-1">
+                    <input 
+                      autoFocus
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && searchQuery.trim()) {
+                          navigate(`/shop?search=${encodeURIComponent(searchQuery)}`);
+                          setSearchOpen(false);
+                        }
+                      }}
+                      placeholder="Search collections..."
+                      className="w-full bg-white border border-black/5 rounded-2xl py-4 px-6 pr-14 text-[16px] font-sans text-black focus:border-[#B0843D]/20 focus:ring-0 transition-all placeholder:text-black/20 shadow-sm"
+                    />
+                    <button 
+                      onClick={() => searchQuery.trim() && navigate(`/shop?search=${encodeURIComponent(searchQuery)}`)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 p-2 hover:scale-110 active:scale-95 transition-all"
+                    >
+                      <Search className="w-6 h-6 text-[#B0843D]" />
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
       </div>
 
       <MegaMenu 
