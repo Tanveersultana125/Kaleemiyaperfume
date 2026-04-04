@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { SlidersHorizontal, ChevronDown, Package, LayoutGrid, Layers, Search as SearchIcon } from "lucide-react";
+import { SlidersHorizontal, ChevronDown, Package, LayoutGrid, Layers, Search as SearchIcon, ArrowLeft } from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import ProductCard from "@/components/ProductCard";
@@ -269,18 +269,37 @@ const Shop = ({
 
       <main className="flex-grow w-full max-w-[1440px] mx-auto px-6 md:px-12 lg:px-20 mb-32">
         {/* Page Header */}
-        <div className="flex flex-col items-center text-center py-10 md:py-16 space-y-4">
-          <motion.h1 
-            key={displayTitle}
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="text-4xl sm:text-5xl md:text-7xl font-serif text-[#310101]"
-          >
-            {displayTitle}
-          </motion.h1>
-          <p className="text-[#310101] font-sans text-xs md:text-base max-w-2xl px-4">
-            {displaySubtitle}
-          </p>
+        <div className="relative py-10 md:py-16">
+          <div className="absolute left-0 top-1/2 -translate-y-1/2 z-30">
+            <AnimatePresence>
+              {(activeCategory !== "all" || discountParam) && (
+                <motion.button
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  onClick={() => navigate(-1)}
+                  className="p-2 sm:p-2.5 rounded-full bg-white shadow-lg border border-[#310101]/5 text-[#310101] hover:bg-black/5 active:scale-90 transition-all shrink-0"
+                  aria-label="Go Back"
+                >
+                  <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
+                </motion.button>
+              )}
+            </AnimatePresence>
+          </div>
+          
+          <div className="flex flex-col items-center text-center space-y-4">
+            <motion.h1 
+              key={displayTitle}
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="text-4xl sm:text-5xl md:text-7xl font-serif text-[#310101] leading-tight"
+            >
+              {displayTitle}
+            </motion.h1>
+            <p className="text-[#310101] font-sans text-xs md:text-base max-w-2xl px-4 opacity-70">
+              {displaySubtitle}
+            </p>
+          </div>
         </div>
 
         {/* Subcategory and Category Filters Ribbon */}

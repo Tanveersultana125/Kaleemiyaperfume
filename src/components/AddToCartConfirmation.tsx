@@ -68,10 +68,7 @@ const AddToCartConfirmation = () => {
                 <Button 
                   onClick={() => {
                     setShowConfirmation(false);
-                    // Open the cart sheet indirectly or redirect
-                    // For now let's just use a toast or close
-                    // Actually, let's keep it simple: Proceed to Checkout
-                    toast.success("Proceeding to checkout...");
+                    navigate("/checkout");
                   }}
                   className="w-full h-14 bg-[#DEB87A] hover:bg-[#D0A96B] text-black rounded-full font-black uppercase tracking-widest text-[12px] shadow-lg shadow-[#DEB87A]/20 transition-all flex items-center justify-center gap-2"
                 >

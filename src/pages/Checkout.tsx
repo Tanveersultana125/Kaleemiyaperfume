@@ -55,6 +55,8 @@ const Checkout = () => {
 
   const discountedPrice = totalPrice - 300;
 
+  const [selectedReason, setSelectedReason] = React.useState<number | null>(null);
+
   const handleOtpChange = (index: number, value: string) => {
     if (value.length > 1) return;
     const newOtp = [...otp];
@@ -103,6 +105,10 @@ const Checkout = () => {
      }
   };
 
+  const handleHeaderContinueShopping = () => {
+     setShowExitModal(true);
+  };
+
   if (cart.length === 0 && checkoutStep !== 'success') {
     return (
       <div className="min-h-screen bg-[#FDFBF7] flex flex-col items-center justify-center p-8 space-y-8">
@@ -145,33 +151,36 @@ const Checkout = () => {
     <div className="min-h-screen bg-gray-100/50 flex items-center justify-center p-0 sm:p-8 font-sans">
       <div className="w-full max-w-[480px] bg-white sm:rounded-[40px] shadow-[0_20px_100px_rgba(0,0,0,0.12)] overflow-hidden flex flex-col min-h-screen sm:min-h-fit relative border border-gray-100 transition-all">
         
-        {/* Elite Artisan Header - Seamless navigation */}
-        <div className="px-8 py-5 flex items-center justify-between bg-white sticky top-0 z-50">
-          <div className="flex items-center gap-2">
-             <button onClick={handleBack} className="p-3 hover:bg-gray-50 rounded-full transition-all group">
+        {/* Elite Artisan Header - Symmetrical & Seamless */}
+        <div className="px-6 sm:px-8 py-5 flex items-center bg-white sticky top-0 z-50">
+          {/* Left: Navigation Portal */}
+          <div className="flex-1 flex items-center justify-start gap-1">
+             <button onClick={handleBack} className="p-2 sm:p-3 hover:bg-[#F9F6F2] rounded-full transition-all group shrink-0">
                 <ChevronLeft className="w-7 h-7 text-black group-hover:-translate-x-1 transition-transform" />
              </button>
-             <button onClick={() => navigate("/")} className="text-[11px] font-black text-black uppercase tracking-[0.2em] px-2 hover:text-[#B0843D] transition-colors hidden sm:block">
+             <button onClick={handleHeaderContinueShopping} className="text-[10px] sm:text-[11px] font-black text-black uppercase tracking-[0.15em] sm:tracking-[0.2em] px-2 hover:text-[#B0843D] transition-colors hidden md:block whitespace-nowrap">
                 Continue Shopping
              </button>
           </div>
           
-          <div className="absolute left-1/2 -translate-x-1/2">
-             <Link to="/" className="flex-shrink-0">
+          {/* Center: Hallmark Logo */}
+          <div className="flex-shrink-0 flex items-center justify-center">
+             <Link to="/" className="block">
                 <img 
                   src="/logo.png" 
                   alt="Kaleemiya Perfumes Logo" 
-                  className="h-[50px] sm:h-[65px] w-auto object-contain transition-all drop-shadow-sm brightness-[0.8]" 
+                  className="h-[45px] sm:h-[65px] w-auto object-contain transition-all drop-shadow-sm brightness-[0.8]" 
                 />
              </Link>
           </div>
 
-          <div className="flex flex-col items-end gap-0.5">
-             <div className="flex items-center gap-1.5 text-black font-black uppercase tracking-[0.1em] text-[11px]">
-               <span>Secured</span>
-               <Lock className="w-4 h-4 text-[#B0843D]" />
+          {/* Right: Security Protocol */}
+          <div className="flex-1 flex flex-col items-end gap-0.5 justify-center">
+             <div className="flex items-center gap-1.5 text-black font-black uppercase tracking-[0.1em] text-[10px] sm:text-[11px]">
+               <span className="hidden xs:inline">Secured</span>
+               <Lock className="w-3.5 h-3.5 sm:w-4 h-4 text-[#B0843D]" />
              </div>
-             <span className="text-[8px] font-black text-[#B0843D] uppercase tracking-widest">PCI DSS</span>
+             <span className="text-[8px] font-black text-[#B0843D] uppercase tracking-widest leading-none">PCI DSS</span>
           </div>
         </div>
 
@@ -401,55 +410,58 @@ const Checkout = () => {
         </div>
       </div>
 
-      {/* Abandonment Modal */}
+      {/* Abandonment Modal - High Fidelity Boutique Design */}
       <AnimatePresence>
         {showExitModal && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/60 backdrop-blur-md">
+          <div className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center p-4 sm:p-6 bg-[#310101]/80 backdrop-blur-xl">
              <motion.div 
-               initial={{ opacity: 0, scale: 0.9, y: 20 }}
+               initial={{ opacity: 0, scale: 0.95, y: 100 }}
                animate={{ opacity: 1, scale: 1, y: 0 }}
-               exit={{ opacity: 0, scale: 0.9, y: 20 }}
-               className="bg-white rounded-[40px] w-full max-w-md overflow-hidden shadow-2xl border border-[#E5D5C5]/30 p-10 space-y-10"
+               exit={{ opacity: 0, scale: 0.95, y: 100 }}
+               transition={{ type: "spring", damping: 30, stiffness: 400 }}
+               className="bg-white rounded-[40px] w-full max-w-md overflow-hidden shadow-[0_30px_100px_rgba(0,0,0,0.5)] p-0 flex flex-col"
              >
-                <div className="space-y-4">
-                   <h2 className="text-3xl font-black text-black">Wait, are you sure?</h2>
-                   <div className="flex items-center gap-2 text-lg font-black">
-                      <span className="text-black">Products in huge demand might run</span>
-                      <span className="text-[#DEB87A]">Out of Stock</span>
+                <div className="p-10 pb-6 space-y-8">
+                   <div className="space-y-4">
+                      <h2 className="text-[32px] font-serif font-black italic text-[#310101] leading-tight">Wait, are you sure?</h2>
+                      <div className="flex flex-col text-[19px] font-black leading-tight">
+                         <span className="text-[#310101]">Products in huge demand might run</span>
+                         <span className="text-[#DEB87A] uppercase tracking-wider">Out of Stock</span>
+                      </div>
                    </div>
-                </div>
 
-                <div className="space-y-8">
-                   <p className="text-black/60 font-black uppercase tracking-widest text-xs">Let us know what went wrong.</p>
-                   <div className="space-y-5">
-                      {[
-                        "The price or discount didn't meet my expectation",
-                        "I'm unsure about delivery date or charges",
-                        "I want to change items or quantities in my cart",
-                        "I'm not confident about returns, refunds, or product quality"
-                      ].map((option, i) => (
-                        <div key={i} className="flex items-center gap-4 cursor-pointer group">
-                           <div className="w-7 h-7 border-2 border-gray-100 rounded-lg group-hover:border-[#B0843D] transition-colors flex items-center justify-center">
-                              <div className="w-3 h-3 bg-[#B0843D] rounded-[2px] opacity-0 group-hover:opacity-20 translate-all" />
+                   <div className="space-y-6">
+                      <p className="text-[#310101]/40 font-black uppercase tracking-[0.2em] text-[10px]">Let us know what went wrong.</p>
+                      <div className="space-y-5">
+                         {[
+                           "The price or discount didn't meet my expectation",
+                           "I'm unsure about delivery date or charges",
+                           "I want to change items or quantities in my cart",
+                           "I'm not confident about returns, refunds, or product quality"
+                         ].map((option, i) => (
+                           <div key={i} onClick={() => setSelectedReason(i)} className="flex items-center gap-5 cursor-pointer group">
+                              <div className={`w-8 h-8 border-[2px] rounded-full transition-all flex items-center justify-center bg-white shadow-sm ${selectedReason === i ? 'border-[#B0843D]' : 'border-gray-100 group-hover:border-[#B0843D]'}`}>
+                                 <div className={`w-3.5 h-3.5 bg-[#B0843D] rounded-full transition-all duration-300 shadow-inner ${selectedReason === i ? 'opacity-100 scale-100' : 'opacity-0 scale-0 group-hover:opacity-100 group-hover:scale-100'}`} />
+                              </div>
+                              <span className={`font-black text-[15px] leading-tight flex-1 transition-colors ${selectedReason === i ? 'text-[#B0843D]' : 'text-[#310101]'}`}>{option}</span>
                            </div>
-                           <span className="text-gray-700 font-bold text-[15px] leading-tight flex-1">{option}</span>
-                        </div>
-                      ))}
+                         ))}
+                      </div>
                    </div>
                 </div>
 
-                <div className="bg-[#FDFBF7] rounded-[30px] p-8 space-y-6">
-                   <p className="font-black text-black text-center text-[15px]">Do you want to still cancel the payment?</p>
+                <div className="p-8 bg-[#FDFBF7] rounded-t-[40px] space-y-8 shadow-[0_-15px_50px_rgba(0,0,0,0.03)] border-t border-[#E5D5C5]/30 mt-4">
+                   <p className="font-black text-[#310101] text-center text-[15px] tracking-tight">Do you want to still cancel the payment?</p>
                    <div className="flex gap-4">
                       <button 
                         onClick={() => setShowExitModal(false)}
-                        className="flex-1 py-5 bg-black text-white rounded-2xl font-black uppercase tracking-widest text-[11px] shadow-lg shadow-black/20"
+                        className="flex-1 py-6 bg-black text-white rounded-[24px] font-black uppercase tracking-[0.3em] text-[11px] shadow-[0_15px_40px_rgba(0,0,0,0.3)] hover:scale-[1.05] active:scale-[0.95] transition-all"
                       >
                         Continue Shopping
                       </button>
                       <button 
                         onClick={() => navigate("/")}
-                        className="flex-1 py-5 border-2 border-gray-200 text-gray-500 rounded-2xl font-black uppercase tracking-widest text-[11px]"
+                        className="flex-1 py-6 border-[2px] border-gray-100 text-[#310101]/40 rounded-[24px] font-black uppercase tracking-[0.3em] text-[11px] hover:border-[#310101]/10 transition-all"
                       >
                         Skip and exit
                       </button>

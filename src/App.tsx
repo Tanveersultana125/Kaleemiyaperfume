@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
+import { BrowserRouter, Route, Routes, Navigate, useLocation } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -56,8 +56,8 @@ const ProtectedAdminRoute = ({ children }: { children: React.ReactNode }) => {
 };
 
 const SupportWidgets = () => {
-  // Use current URL to hide widgets on Admin pages
-  const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
+  const location = useLocation();
+  const pathname = location.pathname;
   
   if (pathname.startsWith("/admin")) return null;
 
@@ -97,56 +97,54 @@ const App = () => {
             </AnimatePresence>
             
             {!loading && (
-              <>
+              <BrowserRouter 
+                future={{ 
+                  v7_startTransition: true,
+                  v7_relativeSplatPath: true, 
+                }}
+              >
                 <Toaster />
                 <Sonner />
                 <PWAInstallPrompt />
                 <OfflineMessage />
-                <BrowserRouter 
-                  future={{ 
-                    v7_startTransition: true,
-                    v7_relativeSplatPath: true, 
-                  }}
-                >
-                  <AddToCartConfirmation />
-                  <Routes>
-                    <Route path="/" element={<Index />} />
-                    <Route path="/shop" element={<Shop />} />
-                    <Route path="/attar" element={<Attar />} />
-                    <Route path="/gift-sets" element={<GiftSets />} />
-                    <Route path="/prayer-mats" element={<PrayerMats />} />
-                    <Route path="/books" element={<IslamicBooks />} />
-                    <Route path="/contact" element={<Contact />} />
-                    <Route path="/product/:id" element={<ProductDetail />} />
-                    
-                    {/* Policy & Support Routes */}
-                    <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-                    <Route path="/terms-of-service" element={<TermsOfService />} />
-                    <Route path="/refund-policy" element={<RefundPolicy />} />
-                    <Route path="/faq" element={<FAQ />} />
-                    <Route path="/track-order" element={<TrackOrder />} />
-                    <Route path="/shipping-info" element={<ShippingInfo />} />
-                    <Route path="/returns" element={<Returns />} />
-                    <Route path="/checkout" element={<Checkout />} />
-                    
-                    {/* Admin Routes */}
-                    <Route path="/admin-login" element={<AdminLogin />} />
-                    <Route path="/admin-request" element={<AdminRequest />} />
-                    <Route 
-                      path="/admin" 
-                      element={
-                        <ProtectedAdminRoute>
-                          <AdminDashboard />
-                        </ProtectedAdminRoute>
-                      } 
-                    />
-                    
-                    <Route path="*" element={<NotFound />} />
-                  </Routes>
+                <AddToCartConfirmation />
+                <Routes>
+                  <Route path="/" element={<Index />} />
+                  <Route path="/shop" element={<Shop />} />
+                  <Route path="/attar" element={<Attar />} />
+                  <Route path="/gift-sets" element={<GiftSets />} />
+                  <Route path="/prayer-mats" element={<PrayerMats />} />
+                  <Route path="/books" element={<IslamicBooks />} />
+                  <Route path="/contact" element={<Contact />} />
+                  <Route path="/product/:id" element={<ProductDetail />} />
                   
-                  <SupportWidgets />
-                </BrowserRouter>
-              </>
+                  {/* Policy & Support Routes */}
+                  <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+                  <Route path="/terms-of-service" element={<TermsOfService />} />
+                  <Route path="/refund-policy" element={<RefundPolicy />} />
+                  <Route path="/faq" element={<FAQ />} />
+                  <Route path="/track-order" element={<TrackOrder />} />
+                  <Route path="/shipping-info" element={<ShippingInfo />} />
+                  <Route path="/returns" element={<Returns />} />
+                  <Route path="/checkout" element={<Checkout />} />
+                  
+                  {/* Admin Routes */}
+                  <Route path="/admin-login" element={<AdminLogin />} />
+                  <Route path="/admin-request" element={<AdminRequest />} />
+                  <Route 
+                    path="/admin" 
+                    element={
+                      <ProtectedAdminRoute>
+                        <AdminDashboard />
+                      </ProtectedAdminRoute>
+                    } 
+                  />
+                  
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+                
+                <SupportWidgets />
+              </BrowserRouter>
             )}
           </CartProvider>
         </AuthProvider>

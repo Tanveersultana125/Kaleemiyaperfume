@@ -1,14 +1,11 @@
 import { useState, useEffect } from "react";
-import { Search, Menu, X, ChevronDown, ShoppingBag, User } from "lucide-react";
+import { Search, Menu, X, ChevronDown, ShoppingBag, User, ArrowLeft } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import MegaMenu from "./MegaMenu";
 import CartDrawer from "./CartDrawer";
 import AnnouncementBanner from "./AnnouncementBanner";
-
-
-
 const navLinks = [
   { name: "Home", href: "/" },
   { name: "Shop", href: "/shop" },
@@ -87,15 +84,15 @@ const Header = () => {
     >
       <AnnouncementBanner />
 
-      <div className="w-full max-w-none px-6 md:px-12" style={{ backgroundColor: headerBg }}>
-        <div className="flex items-center justify-between py-4 md:py-6 gap-6 lg:gap-10">
+      <div className="w-full max-w-none px-4 sm:px-8 md:px-12" style={{ backgroundColor: headerBg }}>
+        <div className="flex items-center justify-between h-20 sm:h-24 md:h-28 gap-4">
           
           {/* 1. Left: Logo */}
-          <Link to="/" className="flex-shrink-0">
+          <Link to="/" className="flex-shrink-0 z-10">
             <img 
               src="/logo.png" 
               alt="Kaleemiya Perfumes Logo" 
-              className="h-[60px] my-[-12px] md:h-[80px] md:my-[-16px] lg:h-[88px] lg:my-[-16px] w-auto object-contain transition-all duration-700 hover:scale-105 drop-shadow-[0_0_15px_rgba(0,0,0,0.05)]" 
+              className="h-12 sm:h-16 md:h-18 lg:h-22 w-auto object-contain transition-all duration-700 hover:scale-105 drop-shadow-[0_0_15px_rgba(0,0,0,0.05)]" 
             />
           </Link>
 
@@ -145,42 +142,44 @@ const Header = () => {
           </nav>
 
           {/* 3. Right: Search + Account + Cart */}
-          <div className="flex items-center gap-3 lg:gap-8 shrink-0">
+          <div className="flex items-center gap-4 sm:gap-6 md:gap-8 shrink-0">
             {/* Desktop Search Bar */}
             <div className="hidden lg:flex relative w-48 xl:w-72">
-              <input 
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && searchQuery.trim()) {
-                    navigate(`/shop?search=${encodeURIComponent(searchQuery)}`);
-                  }
-                }}
-                placeholder="Search..."
-                className="w-full bg-black/5 border border-transparent rounded-full py-2 px-5 pr-10 text-[15px] text-black placeholder:text-black/40 focus:outline-none focus:bg-white focus:border-black/10 transition-all font-sans"
-              />
-              <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-black/40" />
+               <input 
+                 type="text"
+                 value={searchQuery}
+                 onChange={(e) => setSearchQuery(e.target.value)}
+                 onKeyDown={(e) => {
+                   if (e.key === 'Enter' && searchQuery.trim()) {
+                     navigate(`/shop?search=${encodeURIComponent(searchQuery)}`);
+                   }
+                 }}
+                 placeholder="Search..."
+                 className="w-full bg-black/5 border border-transparent rounded-full py-2 px-5 pr-10 text-[15px] text-black placeholder:text-black/40 focus:outline-none focus:bg-white focus:border-black/10 transition-all font-sans"
+               />
+               <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-black/40" />
             </div>
 
             <button 
               onClick={() => setAccountOpen(true)}
-              className="text-black hover:text-black/70 transition-colors hidden sm:flex items-center gap-2 group"
+              className="text-black hover:text-black/70 transition-colors hidden md:flex items-center gap-2 group"
             >
-              <User className="w-4 h-4 md:w-5 md:h-5 text-black/80" />
+              <User className="w-5 h-5 text-black/80" />
               <span className="text-[13px] lg:text-[14px] uppercase tracking-[0.2em] text-black group-hover:text-black/70 font-bold whitespace-nowrap">
                 {user ? user.displayName : "Account"}
               </span>
             </button>
-            <Search className="lg:hidden w-5 h-5 text-black" onClick={() => setSearchOpen(!searchOpen)} />
-            <CartDrawer />
+            <Search className="lg:hidden w-6 h-6 text-black cursor-pointer active:scale-95 transition-transform" onClick={() => setSearchOpen(!searchOpen)} />
+            <div className="scale-110 sm:scale-125 origin-right">
+              <CartDrawer />
+            </div>
             
             {/* Mobile Menu Toggle */}
             <button 
-              className="xl:hidden text-black"
+              className="xl:hidden text-black p-1 active:scale-90 transition-transform"
               onClick={() => setMobileOpen(!mobileOpen)}
             >
-              {mobileOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+              {mobileOpen ? <X className="w-7 h-7" /> : <Menu className="w-7 h-7" />}
             </button>
           </div>
         </div>
@@ -224,7 +223,7 @@ const Header = () => {
               </div>
 
               {/* Drawer Content */}
-              <nav className="flex-1 px-6 py-8 flex flex-col gap-6 bg-[#FDFCFB]">
+              <nav className="flex-1 px-8 py-10 flex flex-col gap-5 bg-[#FDFCFB]">
                 {navLinks.map((link, i) => (
                   <Link
                     key={link.name}
@@ -236,10 +235,10 @@ const Header = () => {
                       initial={{ opacity: 0, x: 20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: 0.1 + i * 0.05, duration: 0.4, ease: "easeOut" }}
-                      className="text-black text-lg font-medium font-sans tracking-[0.1em] uppercase py-3 border-b border-black/5 flex items-center justify-between group-hover:text-[#B0843D] transition-colors"
+                      className="text-[#310101] text-[13px] font-black tracking-[0.25em] uppercase py-4 border-b border-black/5 flex items-center justify-between group-hover:text-[#B0843D] transition-colors"
                     >
                       {link.name}
-                      <span className="opacity-0 -translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 transition-all text-[#B0843D]">→</span>
+                      <span className="opacity-0 -translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 transition-all text-[#B0843D] text-[10px]">→</span>
                     </motion.div>
                   </Link>
                 ))}
@@ -248,10 +247,10 @@ const Header = () => {
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.1 + navLinks.length * 0.05, duration: 0.4 }}
-                  className="pt-4"
+                  className="pt-6"
                 >
                   <button
-                    className="w-full py-4 bg-black text-white text-[15px] tracking-[0.2em] uppercase font-bold hover:bg-black/80 active:scale-[0.98] transition-all shadow-xl shadow-black/10 rounded-sm"
+                    className="w-full py-4 bg-black text-white text-[11px] tracking-[0.3em] uppercase font-black hover:bg-[#310101] active:scale-[0.98] transition-all shadow-lg shadow-black/10 rounded-full"
                     onClick={() => {
                       setMobileOpen(false);
                       setMegaMenuOpen(true);
@@ -264,13 +263,13 @@ const Header = () => {
               </nav>
 
               {/* Drawer Footer */}
-              <div className="p-6 bg-[#F9F6F2] mt-auto border-t border-black/10">
+              <div className="p-8 bg-[#F9F6F2] mt-auto border-t border-[#E5D5C5]/40">
                 <button 
                   onClick={() => { setMobileOpen(false); setAccountOpen(true); }}
-                  className="flex items-center justify-center gap-3 w-full py-4 text-black text-sm font-bold uppercase tracking-widest hover:text-[#B0843D] transition-colors bg-white rounded-full shadow-sm"
+                  className="flex items-center justify-center gap-3 w-full py-4 text-[#310101] text-[11px] font-black uppercase tracking-[0.25em] hover:text-[#B0843D] transition-colors bg-white rounded-full shadow-sm border border-[#E5D5C5]/30"
                 >
-                  <User size={18} /> 
-                  {user ? "View Profile" : "Sign In / Register"}
+                  <User size={15} className="text-[#B0843D]" /> 
+                  {user ? "View Profile" : "Identity Sign-In"}
                 </button>
               </div>
             </motion.div>

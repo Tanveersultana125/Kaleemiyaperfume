@@ -9,7 +9,7 @@ const WhatsAppButton = () => {
     <motion.div 
       initial={{ opacity: 0, scale: 0.8 }}
       animate={{ opacity: 1, scale: 1 }}
-      className="fixed bottom-[92px] right-4 z-[55] md:bottom-[76px]" // Perfectly spaced above the new smaller AIChatbot
+      className="fixed bottom-[108px] right-6 z-[9999] md:bottom-[90px]" // Perfectly spaced above the new smaller AIChatbot
     >
       <a 
         href={whatsappUrl}
