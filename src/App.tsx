@@ -32,6 +32,9 @@ import Returns from "./pages/Returns.tsx";
 import PWAInstallPrompt from "./components/PWAInstallPrompt.tsx";
 import OfflineMessage from "./components/OfflineMessage.tsx";
 
+import AddToCartConfirmation from "./components/AddToCartConfirmation.tsx";
+import Checkout from "./pages/Checkout.tsx";
+
 const queryClient = new QueryClient();
 
 // Protected Route Component
@@ -105,6 +108,7 @@ const App = () => {
                     v7_relativeSplatPath: true, 
                   }}
                 >
+                  <AddToCartConfirmation />
                   <Routes>
                     <Route path="/" element={<Index />} />
                     <Route path="/shop" element={<Shop />} />
@@ -123,6 +127,7 @@ const App = () => {
                     <Route path="/track-order" element={<TrackOrder />} />
                     <Route path="/shipping-info" element={<ShippingInfo />} />
                     <Route path="/returns" element={<Returns />} />
+                    <Route path="/checkout" element={<Checkout />} />
                     
                     {/* Admin Routes */}
                     <Route path="/admin-login" element={<AdminLogin />} />

@@ -43,6 +43,7 @@ const AdminDashboard = () => {
     cdn: "Checking...",
     api: "Checking..."
   });
+  const [galleryItems, setGalleryItems] = useState<any[]>([]);
 
   useEffect(() => {
     const checkSystems = async () => {
@@ -264,6 +265,21 @@ const AdminDashboard = () => {
     return () => unsub();
   }, []);
 
+  // Real-time listener for gallery images 
+  useEffect(() => {
+    const q = query(collection(db, "gallery"));
+    const unsub = onSnapshot(q, (snap) => {
+      const fetched = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      fetched.sort((a: any, b: any) => {
+        const dateA = new Date(a.createdAt || 0);
+        const dateB = new Date(b.createdAt || 0);
+        return dateB.getTime() - dateA.getTime();
+      });
+      setGalleryItems(fetched);
+    });
+    return () => unsub();
+  }, []);
+
   // Real-time listener for admin requests (only for super_admin)
   useEffect(() => {
     if (isSuperAdmin) {
@@ -336,7 +352,8 @@ const AdminDashboard = () => {
       maintenanceMode: false,
       accentColor: "#B0843D",
       publicLivePage: true,
-      protectedMode: true
+      protectedMode: true,
+      checkoutPromo: "FREE GIFT ON ALL PREPAID ORDERS"
     };
   });
 
@@ -671,6 +688,7 @@ const AdminDashboard = () => {
   const sidebarTabs = [
     { title: "Dashboard", icon: LayoutDashboard },
     { title: "Manage Stock", icon: Package },
+    { title: "Store Gallery", icon: Image },
     { title: "Boutique News and Announcements", icon: Newspaper },
     { title: "New Desk", icon: PlusCircle }, 
     { title: "Orders", icon: ShoppingBag },
@@ -795,8 +813,40 @@ const AdminDashboard = () => {
       stock: stockNum,
       status: stockNum > 10 ? "In Stock" : stockNum > 0 ? "Low Stock" : "Out of Stock",
     });
-    setEditingProduct(null);
     toast.success("Product updated!");
+  };
+
+  const handleGalleryUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsUploading(true);
+    const loadingId = toast.loading("Uploading to Gallery...");
+    try {
+      const { uploadToCloudinary } = await import("@/utils/cloudinary");
+      const cloudUrl = await uploadToCloudinary(file);
+      await addDoc(collection(db, "gallery"), {
+        src: cloudUrl,
+        alt: "Kaleemiya Boutique Story",
+        createdAt: new Date().toISOString(),
+        order: galleryItems.length
+      });
+      toast.success("Image added to World of Kaleemiya!", { id: loadingId });
+    } catch (err: any) {
+      toast.error(err.message, { id: loadingId });
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleDeleteGalleryItem = async (id: string) => {
+    if (confirm("Permanently remove this photo from the library?")) {
+      try {
+        await deleteDoc(doc(db, "gallery", id));
+        toast.success("Photo removed from gallery.");
+      } catch (err: any) {
+        toast.error(err.message);
+      }
+    }
   };
 
   const handleAddNews = async (e: React.FormEvent) => {
@@ -1639,6 +1689,59 @@ const AdminDashboard = () => {
             </div>
           )}
 
+          {activeTab === "Store Gallery" && (
+             <div className="space-y-6 pb-4 px-2 md:px-0 max-w-6xl mx-auto">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 md:p-8 rounded-[30px] md:rounded-[40px] border shadow-sm">
+                   <div className="space-y-1">
+                      <h2 className="text-xl md:text-3xl font-serif font-black italic">World of Kaleemiya</h2>
+                      <p className="text-[11px] md:text-[13px] font-black uppercase tracking-[0.2em] opacity-40 italic">Manage Boutique Brand Story Images</p>
+                   </div>
+                   <div className="relative group overflow-hidden">
+                      <button disabled={isUploading} className="bg-[#B0843D] text-white w-full sm:w-auto px-6 md:px-10 py-3 md:py-4 rounded-full text-[11px] md:text-[14px] font-black uppercase tracking-widest flex items-center justify-center gap-3 shadow-xl shadow-[#B0843D]/20 hover:bg-[#310101] active:scale-95 transition-all">
+                        {isUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <PlusCircle className="w-4 h-4" />}
+                        {isUploading ? "Uploading..." : "Add New Image"}
+                      </button>
+                      <input type="file" disabled={isUploading} onChange={handleGalleryUpload} className="absolute inset-0 opacity-0 cursor-pointer" />
+                   </div>
+                </div>
+ 
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+                   {galleryItems.map((item) => (
+                     <div key={item.id} className="relative group aspect-square bg-white rounded-[25px] md:rounded-[35px] overflow-hidden border shadow-sm hover:shadow-2xl transition-all duration-500">
+                        <img src={item.src} alt={item.alt} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
+                           <button 
+                             onClick={() => handleDeleteGalleryItem(item.id)}
+                             className="p-4 bg-white/20 backdrop-blur-md rounded-2xl text-white hover:bg-red-500 transition-colors shadow-2xl"
+                             title="Remove from Gallery"
+                           >
+                             <Trash2 className="w-6 h-6" />
+                           </button>
+                        </div>
+                     </div>
+                   ))}
+ 
+                   {galleryItems.length === 0 && (
+                     <div className="col-span-full py-24 bg-gray-50/50 rounded-[40px] border-2 border-dashed border-gray-200 flex flex-col items-center justify-center text-center">
+                        <Image className="w-16 h-16 text-black/10 mb-4" />
+                        <p className="text-xl font-serif font-black italic text-[#310101]/40 mb-2">No Gallery Photos Synchronized</p>
+                        <p className="text-[13px] font-black uppercase tracking-widest text-[#310101]/20">Upload your storefront photos to establish public prestige</p>
+                     </div>
+                   )}
+                </div>
+                
+                <div className="bg-[#F9F6F2] p-8 md:p-12 rounded-[40px] md:rounded-[50px] flex items-center gap-8 md:gap-10 shadow-sm border border-[#E5D5C5]/30">
+                   <div className="p-5 md:p-6 bg-[#310101] rounded-2xl md:rounded-3xl shadow-xl shadow-[#310101]/10">
+                      <ShieldAlert className="w-8 h-8 md:w-10 md:h-10 text-[#E5D5C5]" />
+                   </div>
+                   <div className="space-y-1">
+                      <h4 className="text-[#310101] text-lg md:text-2xl font-serif font-black italic">Live Site Note</h4>
+                      <p className="text-[#310101]/40 text-[11px] md:text-[14px] font-black uppercase tracking-widest italic">Changes made here are instantly reflected in the 'World of Kaleemiya' public section.</p>
+                   </div>
+                </div>
+             </div>
+           )}
+
           {activeTab === "Admin Requests" && isSuperAdmin && (
             <div className="space-y-12 max-w-6xl mx-auto pb-24">
               <div className="flex flex-col lg:flex-row justify-between lg:items-end gap-10">
@@ -1948,6 +2051,11 @@ const AdminDashboard = () => {
                               <label className="text-[14px] font-black uppercase text-[#B0843D] tracking-widest">Contact Phone</label>
                               <input placeholder="+91..." value={storeSettings.phone || ""} onChange={e => setStoreSettings({...storeSettings, phone: e.target.value})} className="w-full p-6 bg-gray-50 rounded-3xl font-bold outline-none focus:ring-4 focus:ring-[#B0843D]/10 transition-all border-none" />
                            </div>
+                        </div>
+
+                        <div className="space-y-3">
+                           <label className="text-[14px] font-black uppercase text-[#B0843D] tracking-widest">Checkout Promo Message</label>
+                           <input placeholder="E.g. FREE GIFT ON ALL PREPAID ORDERS" value={storeSettings.checkoutPromo || ""} onChange={e => setStoreSettings({...storeSettings, checkoutPromo: e.target.value})} className="w-full p-6 bg-gray-50 rounded-3xl font-bold outline-none focus:ring-4 focus:ring-[#B0843D]/10 transition-all border-none" />
                         </div>
 
                         <div className="grid grid-cols-2 gap-6">
