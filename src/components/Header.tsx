@@ -88,11 +88,12 @@ const Header = () => {
         <div className="flex items-center justify-between h-20 sm:h-24 md:h-28 gap-4">
           
           {/* 1. Left: Logo */}
-          <Link to="/" className="flex-shrink-0 z-10">
+          <Link to="/" className="flex-shrink-0 z-10 transition-transform active:scale-95">
             <img 
               src="/logo.png" 
               alt="Kaleemiya Perfumes Logo" 
-              className="h-12 sm:h-16 md:h-18 lg:h-22 w-auto object-contain transition-all duration-700 hover:scale-105 drop-shadow-[0_0_15px_rgba(0,0,0,0.05)]" 
+              style={{ filter: "contrast(1.15) brightness(1.05) saturate(1.1)" }}
+              className="h-14 sm:h-20 md:h-24 lg:h-28 w-auto object-contain transition-all duration-700 hover:scale-105 drop-shadow-[0_4px_12px_rgba(0,0,0,0.08)]" 
             />
           </Link>
 

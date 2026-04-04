@@ -49,7 +49,7 @@ const AddToCartConfirmation = () => {
                 </div>
                 <div className="flex flex-col justify-center">
                   <p className="font-serif text-lg font-bold text-[#310101] leading-tight mb-1">{lastAdded.name}</p>
-                  <p className="text-[14px] font-sans font-black text-[#B0843D]">{lastAdded.price}</p>
+                  <p className="text-[14px] font-sans font-black text-[#B0843D]">{"\u20B9"}{lastAdded.price.replace(/[^\d.,]/g, "")}</p>
                 </div>
               </div>
 
